@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>国泰海通 2026 春季策略会</title>
+  
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet" />
+</head>
+<body style="margin: 0; background-color: #0a0a0f;">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useMemo } = React;
+
+    const ALL_SESSIONS = [
+      // === MAIN FORUM Mar 24 ===
+      { id: 1, date: "3/24", time: "09:00-09:10", title: "致辞", speaker: "李俊杰 - 国泰海通总裁", track: "主论坛", themes: ["macro"] },
+      { id: 2, date: "3/24", time: "09:10-10:00", title: "中国宏观经济和政策展望", speaker: "海闻 - 北京大学校务委员会副主任、汇丰商学院创院院长", track: "主论坛", themes: ["macro", "china_policy"] },
+      { id: 3, date: "3/24", time: "10:00-10:40", title: "美国经济和货币政策展望", speaker: "特邀嘉宾", track: "主论坛", themes: ["us_macro", "fx_rates"] },
+      { id: 4, date: "3/24", time: "10:40-11:20", title: "中东问题的现状和未来", speaker: "廖百智 - 中国现代国际关系研究院中东研究所所长、研究员", track: "主论坛", themes: ["geopolitics", "energy"] },
+      { id: 5, date: "3/24", time: "11:20-12:00", title: "AI工厂进入跃迁时代", speaker: "黄山 - Lenovo ISG China, CSO", track: "主论坛", themes: ["ai_infra", "ai_compute"] },
+
+      // === Track 1: 总量分会场 Mar 24 PM ===
+      { id: 6, date: "3/24", time: "13:30-14:15", title: '国际秩序重塑：大类资产"重定价"', speaker: "梁中华 - 国泰海通证券宏观研究首席分析师", track: "①总量", themes: ["macro", "asset_allocation", "geopolitics"] },
+      { id: 7, date: "3/24", time: "14:15-15:00", title: "远望又新峰", speaker: "方奕 - 国泰海通证券策略研究首席分析师", track: "①总量", themes: ["macro", "equity_strategy"] },
+      { id: 8, date: "3/24", time: "15:00-15:45", title: "解码企业生命周期：股票投资新范式", speaker: "郑雅斌 - 国泰海通证券金融工程研究首席分析师", track: "①总量", themes: ["quant", "equity_strategy"] },
+      { id: 9, date: "3/24", time: "15:45-16:30", title: "科技支持力度加码，2026年IPO提质稳速", speaker: "王政之 - 国泰海通证券新股研究首席分析师", track: "①总量", themes: ["ipo_market", "tech_policy"] },
+      { id: 10, date: "3/24", time: "16:30-17:15", title: "利率重定价：边界与节奏", speaker: "唐元懋 - 国泰海通证券固定收益研究首席分析师", track: "①总量", themes: ["fx_rates", "fixed_income", "macro"] },
+
+      // === Track 2: AI分会场 Mar 24 PM ===
+      { id: 11, date: "3/24", time: "13:30-14:10", title: "投研Agent：AI研究员元年", speaker: "崔予淳 - 讯兔科技（Alpha派）联合创始人", track: "②AI算力", themes: ["ai_agent", "ai_application"] },
+      { id: 12, date: "3/24", time: "14:10-14:50", title: '打造"中国版TPU"，布局AI多元场景', speaker: "陈宁 - 云天励飞董事长兼CEO", track: "②AI算力", themes: ["ai_compute", "ai_infra", "guochan_tidai"] },
+      { id: 13, date: "3/24", time: "14:50-15:30", title: '从"优惠聚合"到"智能顾问"——银盛数惠如何用AI重构本地生活消费决策', speaker: "关恒 - 银盛数惠总裁", track: "②AI算力", themes: ["ai_application", "consumption"] },
+      { id: 14, date: "3/24", time: "15:30-16:10", title: "AI时代的新战略 从传统软件到智能交付", speaker: "伍玉晟 - 南洋万邦副总经理", track: "②AI算力", themes: ["ai_application"] },
+      { id: 15, date: "3/24", time: "16:10-16:50", title: "端侧智能新纪元：创新与多场景深度应用", speaker: "特邀嘉宾", track: "②AI算力", themes: ["ai_application", "ai_edge"] },
+
+      // === Track 3: AI渗透率 Mar 24 PM ===
+      { id: 16, date: "3/24", time: "13:30-14:00", title: "AI营销的发展趋势", speaker: "刘震 - 因赛集团CTO、首席科学家", track: "③AI渗透率", themes: ["ai_application", "consumption"] },
+      { id: 17, date: "3/24", time: "14:00-14:30", title: "AI漫剧发展趋势", speaker: "特邀嘉宾", track: "③AI渗透率", themes: ["ai_application", "media_content"] },
+      { id: 18, date: "3/24", time: "14:30-15:00", title: "AI玩具的发展趋势", speaker: "特邀嘉宾", track: "③AI渗透率", themes: ["ai_application", "consumption"] },
+      { id: 19, date: "3/24", time: "15:00-15:30", title: "AI广告发展趋势", speaker: "特邀嘉宾", track: "③AI渗透率", themes: ["ai_application", "media_content"] },
+      { id: 20, date: "3/24", time: "15:30-16:00", title: "AI游戏工具", speaker: "特邀嘉宾", track: "③AI渗透率", themes: ["ai_application", "media_content"] },
+      { id: 21, date: "3/24", time: "16:00-16:30", title: "游戏出海观察", speaker: "特邀嘉宾", track: "③AI渗透率", themes: ["china_going_global", "media_content"] },
+      { id: 22, date: "3/24", time: "16:30-17:00", title: "主题演讲", speaker: "特邀嘉宾", track: "③AI渗透率", themes: ["ai_application"] },
+
+      // === Track 4: AI记忆工程 Mar 24 PM ===
+      { id: 23, date: "3/24", time: "13:30-14:00", title: "AI存储行业趋势", speaker: "特邀嘉宾", track: "④AI存储/CPU", themes: ["ai_infra", "semiconductor"] },
+      { id: 24, date: "3/24", time: "14:00-14:30", title: "主题演讲", speaker: "特邀嘉宾", track: "④AI存储/CPU", themes: ["ai_infra"] },
+      { id: 25, date: "3/24", time: "14:30-15:00", title: "AI时代的算力底座：安全如何成为核心竞争力", speaker: "应志伟 - 海光信息软件与安全部副总裁", track: "④AI存储/CPU", themes: ["ai_compute", "ai_infra", "guochan_tidai"] },
+      { id: 26, date: "3/24", time: "15:00-15:30", title: "主题演讲", speaker: "特邀嘉宾", track: "④AI存储/CPU", themes: ["ai_infra"] },
+      { id: 27, date: "3/24", time: "15:30-16:00", title: "主题演讲", speaker: "特邀嘉宾", track: "④AI存储/CPU", themes: ["ai_infra"] },
+
+      // === Track 5: 地产链和反内卷 Mar 24 PM ===
+      { id: 28, date: "3/24", time: "13:30-14:00", title: "2026年房价怎么看？", speaker: "涂力磊 - 国泰海通证券研究所所长助理、房地产研究首席分析师", track: "⑤地产/反内卷", themes: ["property", "consumption", "macro"] },
+      { id: 29, date: "3/24", time: "14:00-14:30", title: "深圳地产市场走势展望", speaker: "肖小平 - 深圳二手房销售中介总监", track: "⑤地产/反内卷", themes: ["property"] },
+      { id: 30, date: "3/24", time: "14:30-15:00", title: "聚焦高分红和科技转型", speaker: "韩其成 - 国泰海通证券建筑工程研究首席分析师", track: "⑤地产/反内卷", themes: ["dividends", "tech_policy"] },
+      { id: 31, date: "3/24", time: "15:00-15:30", title: "天助自助，景气重构", speaker: "花健祎 - 国泰海通证券非金属类建材研究联席首席分析师", track: "⑤地产/反内卷", themes: ["materials", "anti_involution"] },
+      { id: 32, date: "3/24", time: "15:30-16:00", title: "136号文和电力反内卷", speaker: "胡鸿程 - 国泰海通证券公用事业研究分析师", track: "⑤地产/反内卷", themes: ["power_grid", "anti_involution", "china_policy"] },
+      { id: 33, date: "3/24", time: "16:00-16:30", title: "反内卷下的金属投资机会", speaker: "魏雨迪 - 国泰海通证券金属新材料研究分析师", track: "⑤地产/反内卷", themes: ["materials", "anti_involution"] },
+      { id: 34, date: "3/24", time: "16:30-17:00", title: "快递：深入反内卷下的投资机会", speaker: "虞楠 - 国泰海通证券交通运输研究联席首席分析师", track: "⑤地产/反内卷", themes: ["logistics", "anti_involution"] },
+
+      // === Track 6: 大类资产与指数投资 Mar 25 AM ===
+      { id: 35, date: "3/25", time: "09:00-09:30", title: "2026年宏观政策展望", speaker: "张鹏 - 财政专家", track: "⑥大类资产/指数", themes: ["macro", "china_policy", "fiscal"] },
+      { id: 36, date: "3/25", time: "09:30-10:00", title: "全球货币政策变局与资产展望", speaker: "胡捷 - 上海交通大学上海高级金融学院实践教授、前美联储经济学家", track: "⑥大类资产/指数", themes: ["us_macro", "fx_rates", "macro"] },
+      { id: 37, date: "3/25", time: "10:00-10:30", title: "主题演讲", speaker: "左秀海 - 国泰海通资管副总裁", track: "⑥大类资产/指数", themes: ["asset_allocation"] },
+      { id: 38, date: "3/25", time: "10:30-10:55", title: "主题演讲", speaker: "苏徽 - 国泰海通证券策略研究分析师", track: "⑥大类资产/指数", themes: ["equity_strategy"] },
+      { id: 39, date: "3/25", time: "10:55-11:20", title: "恰逢其时，ETF配置策略总览", speaker: "郑雅斌 - 国泰海通证券金融工程研究首席分析师", track: "⑥大类资产/指数", themes: ["etf", "asset_allocation", "quant"] },
+      { id: 40, date: "3/25", time: "11:20-12:00", title: "圆桌论坛", speaker: "成曦(易方达)、许之彦(华安)、赵云阳(博时)、左秀海(国泰海通资管)、陈铁平(海富通)、龚涛(南方)", track: "⑥大类资产/指数", themes: ["etf", "asset_allocation", "fund_manager"] },
+
+      // === Track 7: 通信分会场 Mar 25 AM ===
+      { id: 41, date: "3/25", time: "09:00-09:30", title: "2026年通信行业策略", speaker: "国泰海通证券通信分析师", track: "⑦通信", themes: ["telecom", "ai_infra"] },
+      { id: 42, date: "3/25", time: "09:30-10:00", title: "国内算力建设及光通信需求展望", speaker: "特邀嘉宾", track: "⑦通信", themes: ["ai_compute", "ai_infra", "telecom"] },
+      { id: 43, date: "3/25", time: "10:00-10:30", title: "2026年lnp衬底的供需结构", speaker: "特邀嘉宾", track: "⑦通信", themes: ["semiconductor", "ai_infra"] },
+      { id: 44, date: "3/25", time: "10:30-11:00", title: "人工智能算力网络高速互联的技术演进", speaker: "特邀嘉宾", track: "⑦通信", themes: ["ai_compute", "ai_infra", "telecom"] },
+      { id: 45, date: "3/25", time: "11:00-11:30", title: "国内IDC建设需求拆分", speaker: "特邀嘉宾", track: "⑦通信", themes: ["ai_infra", "ai_compute", "power_grid"] },
+      { id: 46, date: "3/25", time: "11:30-12:00", title: '卫星通信："天基光纤"的现状与未来', speaker: "特邀嘉宾", track: "⑦通信", themes: ["satellite", "telecom", "frontier"] },
+
+      // === Track 8: 宏观政策 Mar 25 AM ===
+      { id: 47, date: "3/25", time: "09:00-09:45", title: "美元霸权松动下的全球货币新秩序", speaker: "特邀嘉宾", track: "⑧宏观政策", themes: ["us_macro", "fx_rates", "geopolitics"] },
+      { id: 48, date: "3/25", time: "09:45-10:30", title: "地缘博弈与产业链重构下的中国政策选择", speaker: "特邀嘉宾", track: "⑧宏观政策", themes: ["geopolitics", "china_policy", "supply_chain"] },
+      { id: 49, date: "3/25", time: "10:30-11:15", title: "2026年中国宏观经济政策展望与资产启示", speaker: "特邀嘉宾", track: "⑧宏观政策", themes: ["macro", "china_policy", "asset_allocation"] },
+
+      // === Track 9: 金融分会场 Mar 25 AM ===
+      { id: 50, date: "3/25", time: "09:00-09:30", title: '"存款搬家"的展望及影响', speaker: "特邀嘉宾", track: "⑨金融", themes: ["banking", "wealth_mgmt", "macro"] },
+      { id: 51, date: "3/25", time: "09:30-10:00", title: "居民财富管理新趋势", speaker: "熊俊 - 平安银行顶级私行业务总监", track: "⑨金融", themes: ["wealth_mgmt"] },
+      { id: 52, date: "3/25", time: "10:00-10:30", title: "非银策略报告", speaker: "刘欣琦 - 国泰海通证券研究所副所长、非银行金融研究首席分析师", track: "⑨金融", themes: ["financials"] },
+      { id: 53, date: "3/25", time: "10:30-11:00", title: "银行策略报告", speaker: "马婷婷 - 国泰海通证券银行研究首席分析师", track: "⑨金融", themes: ["banking"] },
+
+      // === Track 10: 海外科技 Mar 25 AM ===
+      { id: 54, date: "3/25", time: "09:00-09:30", title: "AI社交网络，人类的远大前程", speaker: "秦和平 - 国泰海通证券海外科技研究首席分析师", track: "⑩海外科技", themes: ["ai_application", "us_tech"] },
+      { id: 55, date: "3/25", time: "09:30-10:00", title: "北美和国内AI大模型的发展现状及技术更新", speaker: "特邀嘉宾", track: "⑩海外科技", themes: ["ai_models", "us_tech", "guochan_tidai"] },
+      { id: 56, date: "3/25", time: "10:00-10:30", title: "OpenClaw引领的AI应用开发范式迁移", speaker: "特邀嘉宾", track: "⑩海外科技", themes: ["ai_agent", "ai_application", "us_tech"] },
+      { id: 57, date: "3/25", time: "10:30-11:00", title: "Claude Code, Codex 海内外AI coding趋势及分析", speaker: "特邀嘉宾", track: "⑩海外科技", themes: ["ai_agent", "ai_application", "us_tech"] },
+      { id: 58, date: "3/25", time: "11:00-11:30", title: "AI商业模式：OpenAI广告模型的分析及互联网格局影响", speaker: "特邀嘉宾", track: "⑩海外科技", themes: ["ai_application", "us_tech", "media_content"] },
+
+      // === Track 11: 国别研究 Mar 25 PM ===
+      { id: 59, date: "3/25", time: "13:30-14:15", title: "国际地缘政治变化与中美关系走向", speaker: "特邀嘉宾", track: "⑪国别研究", themes: ["geopolitics", "us_macro"] },
+      { id: 60, date: "3/25", time: "14:15-15:00", title: "世界新变局：欧洲地缘、经济和中欧关系", speaker: "特邀嘉宾", track: "⑪国别研究", themes: ["geopolitics", "europe"] },
+      { id: 61, date: "3/25", time: "15:00-15:45", title: "新门罗主义与政治周期：拉丁美洲发展及中拉合作", speaker: "特邀嘉宾", track: "⑪国别研究", themes: ["geopolitics", "china_going_global"] },
+      { id: 62, date: "3/25", time: "15:45-16:30", title: "美伊对抗下的中东地区安全困境与策略", speaker: "特邀嘉宾", track: "⑪国别研究", themes: ["geopolitics", "energy"] },
+      { id: 63, date: "3/25", time: "16:30-17:15", title: "圆桌论坛：中资出海的变革与机遇", speaker: "特邀嘉宾", track: "⑪国别研究", themes: ["china_going_global", "geopolitics"] },
+
+      // === Track 12: 科技产业链 Mar 25 PM ===
+      { id: 64, date: "3/25", time: "13:30-14:10", title: "美妆龙头如何炼成的，以珀莱雅为例", speaker: "誉猛 - 国泰海通证券消费研究组长", track: "⑫科技产业链", themes: ["consumption", "brand"] },
+      { id: 65, date: "3/25", time: "14:10-14:50", title: "AI的新周期里的卓越龙头", speaker: "王彦龙 - 国泰海通证券通信研究联席首席分析师", track: "⑫科技产业链", themes: ["ai_infra", "telecom", "equity_strategy"] },
+      { id: 66, date: "3/25", time: "14:50-15:30", title: "军工投资新方向：商业航天的星辰大海", speaker: "杨天昊 - 国泰海通证券军工研究首席分析师", track: "⑫科技产业链", themes: ["space", "defense"] },
+      { id: 67, date: "3/25", time: "15:30-16:10", title: "电子半导体：如何把握趋势性高成长股票", speaker: "舒迪 - 国泰海通证券电子研究首席分析师", track: "⑫科技产业链", themes: ["semiconductor", "guochan_tidai"] },
+      { id: 68, date: "3/25", time: "16:10-16:50", title: "寻找科技产业链中高价值/高通胀/高壁垒环节的高弹性引领者", speaker: "韩其成 - 国泰海通证券建筑工程研究首席分析师", track: "⑫科技产业链", themes: ["tech_policy", "equity_strategy"] },
+      { id: 69, date: "3/25", time: "16:50-17:30", title: "计算机：寻找最锋利的矛", speaker: "杨林 - 国泰海通证券计算机研究首席分析师", track: "⑫科技产业链", themes: ["ai_application", "software"] },
+
+      // === Track 13: 固收 Mar 25 PM ===
+      { id: 70, date: "3/25", time: "13:30-14:15", title: "2026年，财政发力逻辑与结果", speaker: "姚东旻 - 中央财经大学中国财政发展协同创新中心主任、教授、博导", track: "⑬固收", themes: ["fiscal", "macro", "china_policy"] },
+      { id: 71, date: "3/25", time: "14:15-15:00", title: "叙事演化与估值周期：2026宏观经济与大类资产前瞻", speaker: "赵建 - 西京研究院院长", track: "⑬固收", themes: ["macro", "asset_allocation", "equity_strategy"] },
+      { id: 72, date: "3/25", time: "15:00-15:45", title: "不囿方寸，债适新途：重塑固收资产的配置逻辑", speaker: "唐元懋 - 国泰海通证券固定收益研究首席分析师", track: "⑬固收", themes: ["fixed_income", "asset_allocation"] },
+      { id: 73, date: "3/25", time: "15:45-16:45", title: "圆桌论坛：方寸之外，如何攻守兼备——固收投资中的多资产方法论", speaker: "特邀嘉宾", track: "⑬固收", themes: ["fixed_income", "asset_allocation"] },
+
+      // === Track 14: 医药 Mar 25 PM ===
+      { id: 74, date: "3/25", time: "13:30-14:00", title: "一级市场角度下中国医药健康产业现状与趋势", speaker: "特邀嘉宾", track: "⑭医药", themes: ["pharma", "china_going_global"] },
+      { id: 75, date: "3/25", time: "14:00-14:30", title: "肿瘤药物全球研发进展", speaker: "特邀嘉宾", track: "⑭医药", themes: ["pharma", "frontier"] },
+      { id: 76, date: "3/25", time: "14:30-15:00", title: "代谢药物全球研发进展", speaker: "特邀嘉宾", track: "⑭医药", themes: ["pharma", "frontier"] },
+      { id: 77, date: "3/25", time: "15:00-15:30", title: "自免药物全球研发进展", speaker: "特邀嘉宾", track: "⑭医药", themes: ["pharma", "frontier"] },
+      { id: 78, date: "3/25", time: "15:30-16:00", title: "中国医疗器械出海机遇与挑战", speaker: "特邀嘉宾", track: "⑭医药", themes: ["pharma", "china_going_global"] },
+      { id: 79, date: "3/25", time: "16:00-16:30", title: "脑机接口大时代", speaker: "特邀嘉宾", track: "⑭医药", themes: ["frontier", "ai_application"] },
+      { id: 80, date: "3/25", time: "16:30-17:00", title: "2026年医药行业策略", speaker: "国泰海通证券医药分析师", track: "⑭医药", themes: ["pharma"] },
+
+      // === Track 15: 电新 Mar 25 PM ===
+      { id: 81, date: "3/25", time: "13:30-14:30", title: "储能、动力电池2026年展望", speaker: "特邀嘉宾", track: "⑮电新", themes: ["new_energy", "ev"] },
+      { id: 82, date: "3/25", time: "14:30-15:30", title: "碳酸锂2026年见底回升", speaker: "特邀嘉宾", track: "⑮电新", themes: ["new_energy", "materials", "commodities"] },
+      { id: 83, date: "3/25", time: "15:30-16:30", title: "风电2026年展望", speaker: "特邀嘉宾", track: "⑮电新", themes: ["new_energy", "power_grid"] },
+      { id: 84, date: "3/25", time: "16:30-17:30", title: "电网投资及特高压2026年展望", speaker: "特邀嘉宾", track: "⑮电新", themes: ["power_grid", "ai_infra"] },
+
+      // === Track 16: 消费 Mar 26 AM ===
+      { id: 85, date: "3/26", time: "09:00-09:30", title: "食品饮料：大众消费回升 / 美妆：GEO营销变革新机遇", speaker: "誉猛 - 国泰海通证券消费研究组长", track: "⑯消费", themes: ["consumption", "brand"] },
+      { id: 86, date: "3/26", time: "09:30-10:00", title: "服务消费迎政策利好，传统消费格局改善", speaker: "刘越男 - 国泰海通证券批零社服研究首席分析师", track: "⑯消费", themes: ["consumption", "china_policy"] },
+      { id: 87, date: "3/26", time: "10:00-10:30", title: "科技赋能家电，静待大众需求复苏", speaker: "蔡雯娟 - 国泰海通证券家电研究首席分析师", track: "⑯消费", themes: ["consumption", "ai_application"] },
+      { id: 88, date: "3/26", time: "10:30-11:00", title: "持续看好制造业和科技消费两条主线", speaker: "刘佳昆 - 国泰海通证券造纸轻工研究首席分析师", track: "⑯消费", themes: ["consumption", "manufacturing"] },
+      { id: 89, date: "3/26", time: "11:00-11:30", title: "原材料的周期弹性与品牌的分化性成长", speaker: "盛开 - 国泰海通证券纺织服装研究首席分析师", track: "⑯消费", themes: ["consumption", "brand", "materials"] },
+      { id: 90, date: "3/26", time: "11:30-12:00", title: "周期破晓见曦，成长擎画新篇", speaker: "林逸丹/王艳君 - 国泰海通证券农林牧渔研究联席首席分析师", track: "⑯消费", themes: ["consumption", "commodities"] },
+
+      // === Track 17: 人形机器人+商业航天 Mar 26 AM ===
+      { id: 91, date: "3/26", time: "09:00-09:30", title: "具身智能模型在家庭场景的泛化", speaker: "特邀嘉宾 - 卧安机器人总架构师", track: "⑰机器人/航天", themes: ["robotics", "ai_application", "frontier"] },
+      { id: 92, date: "3/26", time: "09:30-10:00", title: "具身智能模型在工业场景的泛化", speaker: "特邀嘉宾 - 珞石机器人首席科学家", track: "⑰机器人/航天", themes: ["robotics", "ai_application", "manufacturing"] },
+      { id: 93, date: "3/26", time: "10:00-10:30", title: "力矩闭环在灵巧操作中的重要性", speaker: "特邀嘉宾 - 技术总监", track: "⑰机器人/航天", themes: ["robotics", "frontier"] },
+      { id: 94, date: "3/26", time: "10:30-11:00", title: "电子皮肤在人形机器人产业的技术和应用", speaker: "特邀嘉宾 - 华威科总经理", track: "⑰机器人/航天", themes: ["robotics", "frontier", "materials"] },
+      { id: 95, date: "3/26", time: "11:00-11:30", title: "卫星载荷的现状与展望", speaker: "特邀嘉宾 - 斯北图投融资负责人", track: "⑰机器人/航天", themes: ["satellite", "space"] },
+      { id: 96, date: "3/26", time: "11:30-12:00", title: "中国商业火箭的现状与展望", speaker: "特邀嘉宾 - 航天易龙火箭动力系统负责人", track: "⑰机器人/航天", themes: ["space", "frontier"] },
+
+      // === Track 18: 国企改革和低估值 Mar 26 AM ===
+      { id: 97, date: "3/26", time: "09:00-09:40", title: "长协电价分析和展望", speaker: "特邀嘉宾 - 电力专家", track: "⑱国企改革/低估值", themes: ["power_grid", "china_policy"] },
+      { id: 98, date: "3/26", time: "09:40-10:00", title: "城燃—从成长到红利", speaker: "于鸿光 - 国泰海通证券公用事业研究联席首席分析师", track: "⑱国企改革/低估值", themes: ["utilities", "dividends"] },
+      { id: 99, date: "3/26", time: "10:00-10:15", title: '"十五五"水电新征程', speaker: "傅逸帆 - 国泰海通证券公用事业研究分析师", track: "⑱国企改革/低估值", themes: ["power_grid", "new_energy"] },
+      { id: 100, date: "3/26", time: "10:15-10:30", title: "AI对用电的影响", speaker: "阎石 - 国泰海通证券公用事业研究分析师", track: "⑱国企改革/低估值", themes: ["power_grid", "ai_infra", "ai_compute"] },
+      { id: 101, date: "3/26", time: "10:30-11:00", title: "航空：提振消费叠加反内卷，超级周期乐观可期", speaker: "岳鑫 - 国泰海通证券交通运输研究首席分析师", track: "⑱国企改革/低估值", themes: ["consumption", "anti_involution", "logistics"] },
+      { id: 102, date: "3/26", time: "11:00-11:30", title: "高速公路：需求恢复稳健增长，期待行业政策优化", speaker: "陈亦凡 - 国泰海通证券交通运输研究分析师", track: "⑱国企改革/低估值", themes: ["logistics", "dividends"] },
+
+      // === Track 19: 大宗商品 Mar 26 AM ===
+      { id: 103, date: "3/26", time: "09:00-09:30", title: "贵金属大势研判", speaker: "刘雨萱 - 国泰君安期货高级分析师", track: "⑲大宗商品", themes: ["commodities", "macro"] },
+      { id: 104, date: "3/26", time: "09:30-10:00", title: "有色高波背景下的逻辑演绎", speaker: "季先飞 - 国泰君安期货有色及贵金属首席分析师", track: "⑲大宗商品", themes: ["commodities", "materials"] },
+      { id: 105, date: "3/26", time: "10:00-10:30", title: "新能源品种周期定位", speaker: "张航 - 国泰君安期货高级分析师", track: "⑲大宗商品", themes: ["commodities", "new_energy"] },
+      { id: 106, date: "3/26", time: "10:30-11:00", title: "低价格低波动如何破局", speaker: "李亚飞 - 国泰君安期货高级分析师", track: "⑲大宗商品", themes: ["commodities"] },
+      { id: 107, date: "3/26", time: "11:00-11:30", title: "全球化工产能周期是否扭转", speaker: "陈鑫超 - 国泰君安期货能源化工首席分析师", track: "⑲大宗商品", themes: ["commodities", "energy"] },
+      { id: 108, date: "3/26", time: "11:30-12:00", title: "农产品投资机会展望", speaker: "周小球 - 国泰君安期货农产品首席分析师", track: "⑲大宗商品", themes: ["commodities"] },
+
+      // === Track 20: 多资产配置 Mar 26 AM ===
+      { id: 109, date: "3/26", time: "09:00-09:15", title: "主题演讲", speaker: "耿旭令 - 国泰海通证券业务总监、财富管理委员会总裁", track: "⑳多资产配置", themes: ["asset_allocation", "wealth_mgmt"] },
+      { id: 110, date: "3/26", time: "09:15-09:35", title: "宏观配置研究", speaker: "匡文迪 - 国泰海通证券资产配置部首席宏观配置", track: "⑳多资产配置", themes: ["macro", "asset_allocation"] },
+      { id: 111, date: "3/26", time: "09:35-09:55", title: "大类资产配置策略", speaker: "韩坤 - 国泰海通证券资产配置部首席策略配置", track: "⑳多资产配置", themes: ["asset_allocation"] },
+      { id: 112, date: "3/26", time: "09:55-10:15", title: '股市冷暖"融"先知——从两融数据看市场', speaker: "舒晓光 - 国泰海通证券融资融券部标的研究组组长", track: "⑳多资产配置", themes: ["equity_strategy", "leverage"] },
+      { id: 113, date: "3/26", time: "10:15-10:35", title: "多元配置理念、场外投资工具与客户解决方案", speaker: "傅之瑜 - 国泰海通证券资产配置部公募投资", track: "⑳多资产配置", themes: ["asset_allocation", "wealth_mgmt"] },
+      { id: 114, date: "3/26", time: "10:35-11:00", title: "融策有道，交易致胜—两融策略在交易中的应用", speaker: "郭棣 - 国泰海通证券融资融券部首席两融策略", track: "⑳多资产配置", themes: ["leverage", "equity_strategy"] },
+      { id: 115, date: "3/26", time: "11:00-12:00", title: "圆桌论坛：宏观波动下的多资产配置与杠杆应用", speaker: "叶康 - 国泰海通证券财富管理委员会委员、资产配置部联席总经理", track: "⑳多资产配置", themes: ["asset_allocation", "leverage", "macro"] },
+
+      // === Track 21: 内外资高端交流会 Mar 26 PM ===
+      { id: 116, date: "3/26", time: "15:00-17:00", title: "主题演讲", speaker: "特邀嘉宾", track: "㉑内外资交流", themes: ["geopolitics", "macro", "fund_manager"] },
+
+      // === Track 22: 量化投资 Mar 26 PM ===
+      { id: 117, date: "3/26", time: "13:30-14:00", title: "主题演讲", speaker: "特邀嘉宾", track: "㉒量化投资", themes: ["quant"] },
+      { id: 118, date: "3/26", time: "14:00-14:30", title: '绝对收益的"守"与"攻"——信澳HAI量化多资产多策略实践', speaker: "林景艺 - 信达澳亚基金量化投资部总监兼基金经理", track: "㉒量化投资", themes: ["quant", "fund_manager", "asset_allocation"] },
+      { id: 119, date: "3/26", time: "14:30-15:00", title: "人工智能重构量化投资", speaker: "李自悟 - 海富通基金量化投资部副总监、基金经理", track: "㉒量化投资", themes: ["quant", "ai_application", "fund_manager"] },
+      { id: 120, date: "3/26", time: "15:00-15:30", title: "工程化投研与Smart Beta体系建设", speaker: "许公磊 - 南方基金数量化投资部 基金经理及Smart Beta与多资产配置负责人", track: "㉒量化投资", themes: ["quant", "etf", "fund_manager"] },
+      { id: 121, date: "3/26", time: "15:30-16:00", title: "可转债市场及投资策略介绍", speaker: "于超 - 安值投资管理有限公司董事长", track: "㉒量化投资", themes: ["fixed_income", "equity_strategy"] },
+      { id: 122, date: "3/26", time: "16:00-16:30", title: "主题演讲", speaker: "特邀嘉宾", track: "㉒量化投资", themes: ["quant"] },
+      { id: 123, date: "3/26", time: "16:30-17:00", title: "主题演讲", speaker: "特邀嘉宾", track: "㉒量化投资", themes: ["quant"] },
+
+      // === Track 23: Z世代新能源 Mar 26 PM ===
+      { id: 124, date: "3/26", time: "13:30-14:30", title: "商业航天：火箭、卫星", speaker: "特邀嘉宾", track: "㉓Z世代新能源", themes: ["space", "frontier"] },
+      { id: 125, date: "3/26", time: "14:30-15:30", title: "商业航天与科研院所协同", speaker: "特邀嘉宾", track: "㉓Z世代新能源", themes: ["space"] },
+      { id: 126, date: "3/26", time: "15:30-16:30", title: "商业航天：相控阵雷达 & 卫星激光通信", speaker: "特邀嘉宾", track: "㉓Z世代新能源", themes: ["space", "satellite", "telecom"] },
+      { id: 127, date: "3/26", time: "16:30-17:30", title: "商业航天：太空算力", speaker: "特邀嘉宾", track: "㉓Z世代新能源", themes: ["space", "ai_compute", "frontier"] },
+
+      // === Track 24: 战略资产 Mar 26 PM ===
+      { id: 128, date: "3/26", time: "13:30-14:00", title: "金属：从商品到战略资产", speaker: "李鹏飞 - 国泰海通证券金属新材料研究首席分析师", track: "㉔战略资产", themes: ["commodities", "materials", "geopolitics"] },
+      { id: 129, date: "3/26", time: "14:00-14:30", title: "蒙古煤炭出口前景及公司发展展望", speaker: "黄涛 - 国泰海通证券煤炭开采研究分析师", track: "㉔战略资产", themes: ["commodities", "energy"] },
+      { id: 130, date: "3/26", time: "14:30-15:00", title: "建材：建材出海与工业材料升级", speaker: "花健祎 - 国泰海通证券非金属类建材研究联席首席分析师", track: "㉔战略资产", themes: ["materials", "china_going_global"] },
+      { id: 131, date: "3/26", time: "15:00-15:30", title: "电改终局：供需决定电价", speaker: "吴杰 - 国泰海通证券公用事业研究首席分析师", track: "㉔战略资产", themes: ["power_grid", "china_policy"] },
+      { id: 132, date: "3/26", time: "15:30-16:00", title: "石化：聚焦反内卷", speaker: "朱军军 - 国泰海通证券石油化工研究首席分析师", track: "㉔战略资产", themes: ["energy", "anti_involution"] },
+      { id: 133, date: "3/26", time: "16:00-16:30", title: "油运：超级牛市可期，兼具意外期权", speaker: "岳鑫 - 国泰海通证券交通运输研究首席分析师", track: "㉔战略资产", themes: ["logistics", "energy", "commodities"] },
+
+      // === Track 25: 汽车 Mar 26 PM ===
+      { id: 134, date: "3/26", time: "13:30-14:00", title: "智驾大模型发展趋势", speaker: "特邀嘉宾", track: "㉕汽车", themes: ["ev", "ai_application", "robotics"] },
+      { id: 135, date: "3/26", time: "14:00-14:30", title: "人形机器人灵巧手发展趋势", speaker: "特邀嘉宾", track: "㉕汽车", themes: ["robotics", "frontier"] },
+      { id: 136, date: "3/26", time: "14:30-15:00", title: "乘用车出海终端趋势", speaker: "特邀嘉宾", track: "㉕汽车", themes: ["ev", "china_going_global"] },
+      { id: 137, date: "3/26", time: "15:00-15:30", title: "乘用车终端消费趋势", speaker: "特邀嘉宾", track: "㉕汽车", themes: ["ev", "consumption"] },
+      { id: 138, date: "3/26", time: "15:30-16:00", title: "智能车检测产业升级趋势", speaker: "特邀嘉宾", track: "㉕汽车", themes: ["ev", "ai_application"] },
+      { id: 139, date: "3/26", time: "16:00-16:30", title: "汽车AI投资策略", speaker: "刘一鸣 - 国泰海通证券汽车研究首席分析师", track: "㉕汽车", themes: ["ev", "ai_application", "equity_strategy"] },
+    ];
+
+    const THEME_DEFS = {
+      // Macro & Policy
+      macro: { label: "宏观经济 Macro", color: "#E63946", group: "Macro & Policy" },
+      china_policy: { label: "中国政策信号 Policy Signals", color: "#D62828", group: "Macro & Policy" },
+      fiscal: { label: "财政政策 Fiscal", color: "#C1121F", group: "Macro & Policy" },
+      us_macro: { label: "美国/美联储 US & Fed", color: "#003049", group: "Macro & Policy" },
+      fx_rates: { label: "汇率与利率 FX & Rates", color: "#1D3557", group: "Macro & Policy" },
+      geopolitics: { label: "地缘政治 Geopolitics", color: "#6A040F", group: "Macro & Policy" },
+      anti_involution: { label: "反内卷 Anti-Involution", color: "#9D0208", group: "Macro & Policy" },
+
+      // AI & Compute
+      ai_infra: { label: "AI基础设施 Infrastructure", color: "#7209B7", group: "AI & Compute" },
+      ai_compute: { label: "算力 Compute/Chips", color: "#560BAD", group: "AI & Compute" },
+      ai_agent: { label: "AI Agent/Coding", color: "#480CA8", group: "AI & Compute" },
+      ai_application: { label: "AI应用层 Applications", color: "#3A0CA3", group: "AI & Compute" },
+      ai_models: { label: "大模型 LLMs", color: "#3F37C9", group: "AI & Compute" },
+      ai_edge: { label: "端侧AI Edge AI", color: "#4361EE", group: "AI & Compute" },
+
+      // Power & Energy (the hidden AI bottleneck)
+      power_grid: { label: "电力/电网 Power Grid", color: "#F77F00", group: "Power & Energy" },
+      new_energy: { label: "新能源 New Energy", color: "#FCBF49", group: "Power & Energy" },
+      energy: { label: "能源/石油 Energy/Oil", color: "#EAE2B7", group: "Power & Energy" },
+
+      // Frontier Tech
+      robotics: { label: "人形机器人 Humanoid Robotics", color: "#2EC4B6", group: "Frontier Tech" },
+      space: { label: "商业航天 Commercial Space", color: "#20A4F3", group: "Frontier Tech" },
+      satellite: { label: "卫星通信 Satellite Comms", color: "#0B7189", group: "Frontier Tech" },
+      frontier: { label: "前沿科技 Frontier/BCI/Fusion", color: "#07BEB8", group: "Frontier Tech" },
+      semiconductor: { label: "半导体 Semiconductors", color: "#3DCCC7", group: "Frontier Tech" },
+      guochan_tidai: { label: "国产替代 Domestic Substitution", color: "#68D8D6", group: "Frontier Tech" },
+
+      // Markets & Investing
+      asset_allocation: { label: "大类资产配置 Asset Allocation", color: "#2D6A4F", group: "Markets & Investing" },
+      etf: { label: "ETF策略 ETF", color: "#40916C", group: "Markets & Investing" },
+      equity_strategy: { label: "股票策略 Equity Strategy", color: "#52B788", group: "Markets & Investing" },
+      quant: { label: "量化投资 Quant", color: "#74C69D", group: "Markets & Investing" },
+      fixed_income: { label: "固收/债券 Fixed Income", color: "#95D5B2", group: "Markets & Investing" },
+      leverage: { label: "杠杆/两融 Leverage", color: "#B7E4C7", group: "Markets & Investing" },
+      fund_manager: { label: "基金经理实操 Fund Managers", color: "#D8F3DC", group: "Markets & Investing" },
+      commodities: { label: "大宗商品 Commodities", color: "#1B4332", group: "Markets & Investing" },
+
+      // Real Economy & Sectors
+      consumption: { label: "消费复苏 Consumption", color: "#FF6B6B", group: "Real Economy" },
+      property: { label: "房地产 Property", color: "#EE6C4D", group: "Real Economy" },
+      pharma: { label: "医药出海 Pharma Global", color: "#F4845F", group: "Real Economy" },
+      ev: { label: "新能源车/智驾 EV & Auto", color: "#F7A072", group: "Real Economy" },
+      manufacturing: { label: "制造业 Manufacturing", color: "#F7B267", group: "Real Economy" },
+      china_going_global: { label: "中资出海 Going Global", color: "#FFC857", group: "Real Economy" },
+      brand: { label: "品牌/美妆 Brand", color: "#FFE066", group: "Real Economy" },
+
+      // Other
+      us_tech: { label: "美国科技 US Tech", color: "#118AB2", group: "Cross-Pacific" },
+      supply_chain: { label: "产业链重构 Supply Chain", color: "#073B4C", group: "Cross-Pacific" },
+      europe: { label: "欧洲 Europe", color: "#264653", group: "Cross-Pacific" },
+
+      // Sector-specific
+      telecom: { label: "通信 Telecom", color: "#8D99AE", group: "Sectors" },
+      banking: { label: "银行 Banking", color: "#457B9D", group: "Sectors" },
+      financials: { label: "金融 Financials", color: "#2A6F97", group: "Sectors" },
+      wealth_mgmt: { label: "财富管理 Wealth Mgmt", color: "#014F86", group: "Sectors" },
+      utilities: { label: "公用事业 Utilities", color: "#01497C", group: "Sectors" },
+      logistics: { label: "交运/快递 Logistics", color: "#013A63", group: "Sectors" },
+      defense: { label: "军工 Defense", color: "#012A4A", group: "Sectors" },
+      materials: { label: "材料 Materials", color: "#468FAF", group: "Sectors" },
+      dividends: { label: "高分红 Dividends", color: "#61A5C2", group: "Sectors" },
+      software: { label: "软件 Software", color: "#89C2D9", group: "Sectors" },
+      media_content: { label: "内容/游戏 Media", color: "#A9D6E5", group: "Sectors" },
+      ipo_market: { label: "IPO市场", color: "#CAF0F8", group: "Sectors" },
+      tech_policy: { label: "科技政策支持", color: "#ADE8F4", group: "Sectors" },
+    };
+
+    const GROUPS_ORDER = [
+      "Macro & Policy",
+      "AI & Compute",
+      "Power & Energy",
+      "Frontier Tech",
+      "Markets & Investing",
+      "Real Economy",
+      "Cross-Pacific",
+      "Sectors",
+    ];
+
+    const GROUP_COLORS = {
+      "Macro & Policy": "#E63946",
+      "AI & Compute": "#7209B7",
+      "Power & Energy": "#F77F00",
+      "Frontier Tech": "#2EC4B6",
+      "Markets & Investing": "#2D6A4F",
+      "Real Economy": "#FF6B6B",
+      "Cross-Pacific": "#118AB2",
+      "Sectors": "#8D99AE",
+    };
+
+    function SessionCard({ session, selectedThemes, score, maxScore }) {
+      const pct = maxScore > 0 ? score / maxScore : 0;
+
+      return (
+        <div className="session-card">
+          <div className="session-meta">
+            <span className="session-date">{session.date}</span>
+            <span className="session-time">{session.time}</span>
+            <span className="session-track">{session.track}</span>
+          </div>
+          <div className="session-title">{session.title}</div>
+          <div className="session-speaker">{session.speaker}</div>
+          <div className="session-themes">
+            {session.themes.map(t => {
+              const def = THEME_DEFS[t];
+              if (!def) return null;
+              const isMatched = selectedThemes.has(t);
+              return (
+                <div
+                  key={t}
+                  title={def.label}
+                  className={`session-theme-dot ${isMatched ? "matched" : ""}`}
+                  style={{ backgroundColor: def.color }}
+                />
+              );
+            })}
+          </div>
+          {score > 1 && (
+            <div
+              className="match-bar"
+              style={{
+                width: `${pct * 100}%`,
+                background: `linear-gradient(90deg, #E63946, #7209B7)`,
+              }}
+            />
+          )}
+        </div>
+      );
+    }
+
+    function ConferenceRethemed() {
+      const [selectedThemes, setSelectedThemes] = useState(new Set());
+      const [viewMode, setViewMode] = useState("themes"); // "themes" or "timeline"
+      const [expandedGroup, setExpandedGroup] = useState(null);
+
+      const themesByGroup = useMemo(() => {
+        const map = {};
+        for (const [key, def] of Object.entries(THEME_DEFS)) {
+          if (!map[def.group]) map[def.group] = [];
+          // count sessions
+          const count = ALL_SESSIONS.filter(s => s.themes.includes(key)).length;
+          map[def.group].push({ key, ...def, count });
+        }
+        // sort each group by count desc
+        for (const g of Object.keys(map)) {
+          map[g].sort((a, b) => b.count - a.count);
+        }
+        return map;
+      }, []);
+
+      const filteredSessions = useMemo(() => {
+        if (selectedThemes.size === 0) return [];
+        return ALL_SESSIONS.filter(s =>
+          s.themes.some(t => selectedThemes.has(t))
+        ).sort((a, b) => {
+          const dateA = a.date.replace("/", "");
+          const dateB = b.date.replace("/", "");
+          if (dateA !== dateB) return dateA.localeCompare(dateB);
+          return a.time.localeCompare(b.time);
+        });
+      }, [selectedThemes]);
+
+      const toggleTheme = (key) => {
+        setSelectedThemes(prev => {
+          const next = new Set(prev);
+          if (next.has(key)) next.delete(key);
+          else next.add(key);
+          return next;
+        });
+      };
+
+      const selectGroup = (group) => {
+        const keys = themesByGroup[group].map(t => t.key);
+        const allSelected = keys.every(k => selectedThemes.has(k));
+        setSelectedThemes(prev => {
+          const next = new Set(prev);
+          if (allSelected) {
+            keys.forEach(k => next.delete(k));
+          } else {
+            keys.forEach(k => next.add(k));
+          }
+          return next;
+        });
+      };
+
+      const clearAll = () => setSelectedThemes(new Set());
+
+      // For timeline view, group by date+time slot
+      const timelineGroups = useMemo(() => {
+        if (filteredSessions.length === 0) return {};
+        const groups = {};
+        for (const s of filteredSessions) {
+          const key = s.date;
+          if (!groups[key]) groups[key] = [];
+          groups[key].push(s);
+        }
+        return groups;
+      }, [filteredSessions]);
+
+      const matchScore = (session) => {
+        return session.themes.filter(t => selectedThemes.has(t)).length;
+      };
+
+      return (
+        <div style={{
+          fontFamily: "'DM Sans', 'Noto Sans SC', sans-serif",
+          background: "var(--bg, #0a0a0f)",
+          color: "var(--text, #e8e6e3)",
+          minHeight: "100vh",
+          padding: "24px 16px",
+          maxWidth: 900,
+          margin: "0 auto",
+        }}>
+          <style>{`
+            :root {
+              --bg: #0a0a0f;
+              --text: #e8e6e3;
+              --card: #141419;
+              --card-hover: #1c1c24;
+              --border: #2a2a35;
+              --muted: #6b6b7b;
+            }
+            @media (prefers-color-scheme: light) {
+              :root {
+                --bg: #f7f6f3;
+                --text: #1a1a2e;
+                --card: #ffffff;
+                --card-hover: #f0eeeb;
+                --border: #e0ddd8;
+                --muted: #8a8a9a;
+              }
+            }
+            * { box-sizing: border-box; }
+            .theme-chip {
+              display: inline-flex;
+              align-items: center;
+              gap: 6px;
+              padding: 6px 12px;
+              border-radius: 20px;
+              font-size: 12.5px;
+              font-weight: 500;
+              cursor: pointer;
+              transition: all 0.15s ease;
+              border: 1.5px solid var(--border);
+              background: var(--card);
+              color: var(--text);
+              white-space: nowrap;
+            }
+            .theme-chip:hover { background: var(--card-hover); }
+            .theme-chip.active {
+              border-color: currentColor;
+              box-shadow: 0 0 0 1px currentColor;
+            }
+            .theme-chip .count {
+              font-size: 10px;
+              opacity: 0.5;
+              font-weight: 400;
+            }
+            .group-header {
+              display: flex;
+              align-items: center;
+              gap: 10px;
+              padding: 10px 0;
+              cursor: pointer;
+              user-select: none;
+            }
+            .group-header:hover .group-name { opacity: 0.8; }
+            .group-dot {
+              width: 10px;
+              height: 10px;
+              border-radius: 50%;
+              flex-shrink: 0;
+            }
+            .group-name {
+              font-size: 13px;
+              font-weight: 700;
+              letter-spacing: 0.5px;
+              text-transform: uppercase;
+            }
+            .group-count {
+              font-size: 11px;
+              color: var(--muted);
+              margin-left: auto;
+            }
+            .session-card {
+              background: var(--card);
+              border: 1px solid var(--border);
+              border-radius: 10px;
+              padding: 14px 16px;
+              margin-bottom: 8px;
+              transition: all 0.15s ease;
+            }
+            .session-card:hover { background: var(--card-hover); }
+            .session-meta {
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              margin-bottom: 6px;
+              flex-wrap: wrap;
+            }
+            .session-date {
+              font-size: 11px;
+              font-weight: 700;
+              padding: 2px 8px;
+              border-radius: 4px;
+              background: var(--border);
+              color: var(--text);
+            }
+            .session-time {
+              font-size: 12px;
+              color: var(--muted);
+              font-variant-numeric: tabular-nums;
+            }
+            .session-track {
+              font-size: 10.5px;
+              color: var(--muted);
+              margin-left: auto;
+            }
+            .session-title {
+              font-size: 14.5px;
+              font-weight: 600;
+              margin-bottom: 4px;
+              line-height: 1.4;
+            }
+            .session-speaker {
+              font-size: 12px;
+              color: var(--muted);
+              line-height: 1.4;
+            }
+            .session-themes {
+              display: flex;
+              gap: 4px;
+              flex-wrap: wrap;
+              margin-top: 8px;
+            }
+            .session-theme-dot {
+              width: 8px;
+              height: 8px;
+              border-radius: 50%;
+              opacity: 0.7;
+            }
+            .session-theme-dot.matched {
+              opacity: 1;
+              box-shadow: 0 0 4px currentColor;
+            }
+            .match-bar {
+              height: 3px;
+              border-radius: 2px;
+              margin-top: 10px;
+              opacity: 0.6;
+            }
+            .day-divider {
+              font-size: 16px;
+              font-weight: 700;
+              padding: 20px 0 10px;
+              border-bottom: 1px solid var(--border);
+              margin-bottom: 12px;
+              display: flex;
+              align-items: center;
+              gap: 10px;
+            }
+            .day-divider .count-badge {
+              font-size: 11px;
+              font-weight: 500;
+              color: var(--muted);
+              background: var(--card);
+              padding: 2px 8px;
+              border-radius: 10px;
+              border: 1px solid var(--border);
+            }
+            .view-toggle {
+              display: flex;
+              gap: 0;
+              border: 1px solid var(--border);
+              border-radius: 8px;
+              overflow: hidden;
+              margin: 16px 0;
+            }
+            .view-toggle button {
+              flex: 1;
+              padding: 8px 16px;
+              font-size: 12px;
+              font-weight: 600;
+              border: none;
+              background: var(--card);
+              color: var(--muted);
+              cursor: pointer;
+              transition: all 0.15s;
+            }
+            .view-toggle button.active {
+              background: var(--text);
+              color: var(--bg);
+            }
+            .clear-btn {
+              font-size: 11px;
+              color: var(--muted);
+              background: none;
+              border: 1px solid var(--border);
+              border-radius: 6px;
+              padding: 4px 10px;
+              cursor: pointer;
+              transition: all 0.15s;
+            }
+            .clear-btn:hover { color: var(--text); border-color: var(--text); }
+            .overlap-warning {
+              background: #E6394620;
+              border: 1px solid #E6394640;
+              border-radius: 8px;
+              padding: 10px 14px;
+              margin-bottom: 8px;
+              font-size: 12px;
+              color: #E63946;
+            }
+          `}</style>
+
+          <div style={{ marginBottom: 24 }}>
+            <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 4, lineHeight: 1.3 }}>
+              国泰海通 2026 春季策略会
+            </h1>
+            <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 16, lineHeight: 1.5 }}>
+              139 sessions across 25 tracks, re-grouped into cross-cutting themes. Select themes to filter.
+            </p>
+
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: "var(--muted)" }}>
+                {selectedThemes.size} themes selected · {filteredSessions.length} sessions
+              </span>
+              {selectedThemes.size > 0 && <button className="clear-btn" onClick={clearAll}>Clear all</button>}
+            </div>
+
+            {GROUPS_ORDER.map(group => {
+              const themes = themesByGroup[group] || [];
+              const isExpanded = expandedGroup === group;
+              const selectedCount = themes.filter(t => selectedThemes.has(t.key)).length;
+              return (
+                <div key={group} style={{ marginBottom: 4 }}>
+                  <div className="group-header" onClick={() => setExpandedGroup(isExpanded ? null : group)}>
+                    <div className="group-dot" style={{ background: GROUP_COLORS[group] }} />
+                    <span className="group-name" style={{ color: GROUP_COLORS[group] }}>{group}</span>
+                    {selectedCount > 0 && (
+                      <span style={{ fontSize: 11, color: GROUP_COLORS[group], opacity: 0.7 }}>
+                        {selectedCount}/{themes.length}
+                      </span>
+                    )}
+                    <span className="group-count">
+                      {themes.reduce((sum, t) => sum + t.count, 0)} mentions · {isExpanded ? "▾" : "▸"}
+                    </span>
+                  </div>
+                  {isExpanded && (
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6, paddingLeft: 20, paddingBottom: 10 }}>
+                      <div
+                        className="theme-chip"
+                        style={{ borderStyle: "dashed", fontSize: 11 }}
+                        onClick={() => selectGroup(group)}
+                      >
+                        Toggle all
+                      </div>
+                      {themes.map(t => (
+                        <div
+                          key={t.key}
+                          className={`theme-chip ${selectedThemes.has(t.key) ? "active" : ""}`}
+                          style={selectedThemes.has(t.key) ? { color: t.color, borderColor: t.color } : {}}
+                          onClick={() => toggleTheme(t.key)}
+                        >
+                          {t.label} <span className="count">{t.count}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {filteredSessions.length > 0 && (
+            <>
+              <div className="view-toggle">
+                <button className={viewMode === "themes" ? "active" : ""} onClick={() => setViewMode("themes")}>
+                  By Relevance
+                </button>
+                <button className={viewMode === "timeline" ? "active" : ""} onClick={() => setViewMode("timeline")}>
+                  By Timeline
+                </button>
+              </div>
+
+              {viewMode === "timeline" ? (
+                Object.entries(timelineGroups).map(([date, sessions]) => {
+                  const overlaps = [];
+                  for (let i = 0; i < sessions.length; i++) {
+                    for (let j = i + 1; j < sessions.length; j++) {
+                      const [s1Start] = sessions[i].time.split("-");
+                      const [, s1End] = sessions[i].time.split("-");
+                      const [s2Start] = sessions[j].time.split("-");
+                      if (s2Start < s1End && s1Start < sessions[j].time.split("-")[1]) {
+                        overlaps.push([sessions[i].id, sessions[j].id]);
+                      }
+                    }
+                  }
+                  const hasOverlaps = overlaps.length > 0;
+
+                  return (
+                    <div key={date}>
+                      <div className="day-divider">
+                        {date === "3/24" ? "Day 1 · 3月24日" : date === "3/25" ? "Day 2 · 3月25日" : "Day 3 · 3月26日"}
+                        <span className="count-badge">{sessions.length} sessions</span>
+                      </div>
+                      {hasOverlaps && (
+                        <div className="overlap-warning">
+                          ⚠ {overlaps.length} time conflicts — you'll need to choose between parallel sessions
+                        </div>
+                      )}
+                      {sessions.map(s => (
+                        <SessionCard key={s.id} session={s} selectedThemes={selectedThemes} score={matchScore(s)} maxScore={selectedThemes.size} />
+                      ))}
+                    </div>
+                  );
+                })
+              ) : (
+                [...filteredSessions]
+                  .sort((a, b) => {
+                    const scoreA = matchScore(a);
+                    const scoreB = matchScore(b);
+                    if (scoreB !== scoreA) return scoreB - scoreA;
+                    const dateA = a.date.replace("/", "");
+                    const dateB = b.date.replace("/", "");
+                    if (dateA !== dateB) return dateA.localeCompare(dateB);
+                    return a.time.localeCompare(b.time);
+                  })
+                  .map(s => (
+                    <SessionCard key={s.id} session={s} selectedThemes={selectedThemes} score={matchScore(s)} maxScore={selectedThemes.size} />
+                  ))
+              )}
+            </>
+          )}
+
+          {selectedThemes.size > 0 && filteredSessions.length === 0 && (
+            <div style={{ textAlign: "center", padding: 40, color: "var(--muted)" }}>
+              No sessions match the selected themes.
+            </div>
+          )}
+
+          {selectedThemes.size === 0 && (
+            <div style={{ textAlign: "center", padding: 40, color: "var(--muted)", fontSize: 13, lineHeight: 1.6 }}>
+              ↑ Expand a group and select themes to see matching sessions.<br />
+              Try combining themes across groups to find hidden connections — e.g. "Power Grid" + "AI Infrastructure" reveals the energy bottleneck for AI buildout.
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Mount the React app to the DOM
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<ConferenceRethemed />);
+  </script>
+</body>
+</html>

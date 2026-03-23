@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Replay Watchlist</title>
+  
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  
+  <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #08080c;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useMemo } = React;
+
+    const ATTENDING = new Set([1,2,3,4,5,11,12,32,33,34,39,40,47,48,49,70,71,78,79,91,92,93,94,100,117,118,119,120,121]);
+
+    const REPLAY_SESSIONS = [
+      // === TIER 1: WATCH WITHIN 3 DAYS (Information decay — highest urgency) ===
+      {
+        id: 6, tier: 1, rank: 1, watchBy: "3 days",
+        date: "3/24", time: "13:30-14:15", track: "①总量",
+        title: '国际秩序重塑：大类资产"重定价"',
+        speaker: "梁中华 - 国泰海通证券宏观研究首席分析师",
+        reason: "梁中华's asset repricing framework will be the most-cited macro call of the conference. Every downstream analyst will reference it. You need the primary source before the market digests it, not the secondhand summaries.",
+        themes: ["macro", "asset_allocation", "geopolitics"],
+        horizon: "2026",
+        framework: "information_decay",
+      },
+      {
+        id: 7, tier: 1, rank: 2, watchBy: "3 days",
+        date: "3/24", time: "14:15-15:00", track: "①总量",
+        title: "远望又新峰",
+        speaker: "方奕 - 国泰海通证券策略研究首席分析师",
+        reason: "House strategy call sets the tone for how 国泰海通's entire client base positions. Their flow matters — this is the view that moves capital.",
+        themes: ["macro", "equity_strategy"],
+        horizon: "2026",
+        framework: "information_decay",
+      },
+      {
+        id: 28, tier: 1, rank: 3, watchBy: "3 days",
+        date: "3/24", time: "13:30-14:00", track: "⑤地产/反内卷",
+        title: "2026年房价怎么看？",
+        speaker: "涂力磊 - 房地产研究首席分析师",
+        reason: "Property stabilization is the single biggest swing factor for consumption recovery — one of your satellite ETF themes. His price floor call directly affects your consumption thesis timing.",
+        themes: ["property", "consumption", "macro"],
+        horizon: "2026",
+        framework: "information_decay",
+      },
+      {
+        id: 35, tier: 1, rank: 4, watchBy: "3 days",
+        date: "3/25", time: "09:00-09:30", track: "⑥大类资产/指数",
+        title: "2026年宏观政策展望",
+        speaker: "张鹏 - 财政专家",
+        reason: "You're in Track ⑧ at this time. But 张鹏 is a fiscal specialist — his read on government spending channels (local gov bonds vs. consumption vouchers vs. infrastructure) determines which sectors actually receive the money. Watch ASAP.",
+        themes: ["macro", "china_policy", "fiscal"],
+        horizon: "2026",
+        framework: "information_decay",
+      },
+      {
+        id: 36, tier: 1, rank: 5, watchBy: "3 days",
+        date: "3/25", time: "09:30-10:00", track: "⑥大类资产/指数",
+        title: "全球货币政策变局与资产展望",
+        speaker: "胡捷 - 上海交通大学, 前美联储经济学家",
+        reason: "Former Fed economist giving the global rates view — directly relevant to your FX exposure and the structural dollar thesis you're hearing in Track ⑧. You need both sides.",
+        themes: ["us_macro", "fx_rates", "macro"],
+        horizon: "2026",
+        framework: "information_decay",
+      },
+      {
+        id: 10, tier: 1, rank: 6, watchBy: "3 days",
+        date: "3/24", time: "16:30-17:15", track: "①总量",
+        title: "利率重定价：边界与节奏",
+        speaker: "唐元懋 - 固定收益研究首席分析师",
+        reason: "You might catch this live if the Track ⑤ 反内卷 sessions end on time — but if not, this is urgent. Rate regime shifts are the single biggest macro variable. 唐元懋 does this again on Day 2 (Track ⑬ session 72) but from a different angle.",
+        themes: ["fx_rates", "fixed_income", "macro"],
+        horizon: "2026",
+        framework: "information_decay",
+      },
+      {
+        id: 29, tier: 1, rank: 7, watchBy: "3 days",
+        date: "3/24", time: "14:00-14:30", track: "⑤地产/反内卷",
+        title: "深圳地产市场走势展望",
+        speaker: "肖小平 - 深圳二手房销售中介总监",
+        reason: "An actual ground-level operator seeing daily transaction flow. Shenzhen is the leading indicator city for property sentiment. This is primary data you can't get from any report.",
+        themes: ["property"],
+        horizon: "2026",
+        framework: "non_reconstructible",
+      },
+
+      // === TIER 2: WATCH WITHIN 1 WEEK (Blind spots + thesis stress tests) ===
+      {
+        id: 84, tier: 2, rank: 8, watchBy: "1 week",
+        date: "3/25", time: "16:30-17:30", track: "十五电新",
+        title: "电网投资及特高压2026年展望",
+        speaker: "特邀嘉宾",
+        reason: "UHV grid buildout is the physical layer beneath AI compute expansion. If grid investment disappoints, your AI infrastructure timeline stretches. This directly stress-tests your domestic AI ETF position.",
+        themes: ["power_grid", "ai_infra"],
+        horizon: "2026-2028",
+        framework: "thesis_stress_test",
+      },
+      {
+        id: 131, tier: 2, rank: 9, watchBy: "1 week",
+        date: "3/26", time: "15:00-15:30", track: "㉔战略资产",
+        title: "电改终局：供需决定电价",
+        speaker: "吴杰 - 公用事业研究首席分析师",
+        reason: "Electricity pricing reform endgame. If electricity prices marketize, it reprices every energy-intensive industry including data centers. The AI×Power intersection again — from the policy/pricing angle.",
+        themes: ["power_grid", "china_policy"],
+        horizon: "2026-2030",
+        framework: "thesis_stress_test",
+      },
+      {
+        id: 97, tier: 2, rank: 10, watchBy: "1 week",
+        date: "3/26", time: "09:00-09:40", track: "⑱国企改革/低估值",
+        title: "长协电价分析和展望",
+        speaker: "特邀嘉宾 - 电力专家",
+        reason: "Long-term power purchase agreement pricing is the mechanism through which AI data centers lock in energy costs. An actual power industry expert (not a sell-side analyst) gives you the operator's view.",
+        themes: ["power_grid", "china_policy"],
+        horizon: "2026-2028",
+        framework: "non_reconstructible",
+      },
+      {
+        id: 74, tier: 2, rank: 11, watchBy: "1 week",
+        date: "3/25", time: "13:30-14:00", track: "十四医药",
+        title: "一级市场角度下中国医药健康产业现状与趋势",
+        speaker: "特邀嘉宾",
+        reason: "Primary market (VC/PE) view on pharma — this tells you where early-stage capital is flowing in biotech before it shows up in public markets. You have zero pharma exposure; this is the entry point.",
+        themes: ["pharma", "china_going_global"],
+        horizon: "3-5 years",
+        framework: "blind_spot",
+      },
+      {
+        id: 75, tier: 2, rank: 12, watchBy: "1 week",
+        date: "3/25", time: "14:00-14:30", track: "十四医药",
+        title: "肿瘤药物全球研发进展",
+        speaker: "特邀嘉宾",
+        reason: "Oncology is where Chinese biotechs are most competitive globally. Licensing deal flow is accelerating. This is one of the few areas where US-China decoupling ISN'T happening — FDA still approves Chinese-originated molecules.",
+        themes: ["pharma", "frontier"],
+        horizon: "3-5 years",
+        framework: "blind_spot",
+      },
+      {
+        id: 76, tier: 2, rank: 13, watchBy: "1 week",
+        date: "3/25", time: "14:30-15:00", track: "十四医药",
+        title: "代谢药物全球研发进展",
+        speaker: "特邀嘉宾",
+        reason: "GLP-1/metabolic drugs are the biggest pharma theme globally. Where Chinese companies sit in this race determines whether a massive TAM is accessible to domestic investors.",
+        themes: ["pharma", "frontier"],
+        horizon: "3-5 years",
+        framework: "blind_spot",
+      },
+      {
+        id: 42, tier: 2, rank: 14, watchBy: "1 week",
+        date: "3/25", time: "09:30-10:00", track: "⑦通信",
+        title: "国内算力建设及光通信需求展望",
+        speaker: "特邀嘉宾",
+        reason: "Domestic compute buildout demand forecast — quantifies the AI infrastructure investment cycle. Stress-tests whether AI infra ETFs are priced for realistic or optimistic demand curves.",
+        themes: ["ai_compute", "ai_infra", "telecom"],
+        horizon: "2026-2028",
+        framework: "thesis_stress_test",
+      },
+      {
+        id: 45, tier: 2, rank: 15, watchBy: "1 week",
+        date: "3/25", time: "11:00-11:30", track: "⑦通信",
+        title: "国内IDC建设需求拆分",
+        speaker: "特邀嘉宾",
+        reason: "IDC demand decomposition — how much is AI training vs. inference vs. traditional cloud? This tells you which phase of the compute cycle we're in, and whether the infrastructure buildout is front-loaded or sustained.",
+        themes: ["ai_infra", "ai_compute", "power_grid"],
+        horizon: "2026-2028",
+        framework: "thesis_stress_test",
+      },
+      {
+        id: 67, tier: 2, rank: 16, watchBy: "1 week",
+        date: "3/25", time: "15:30-16:10", track: "⑫科技产业链",
+        title: "电子半导体：如何把握趋势性高成长股票",
+        speaker: "舒迪 - 电子研究首席分析师",
+        reason: "Directly validates/challenges your 国产替代 semiconductor thesis. 舒迪's stock-picking framework tells you which part of the semi chain has actual earnings growth vs. just policy narrative.",
+        themes: ["semiconductor", "guochan_tidai"],
+        horizon: "2026-2028",
+        framework: "thesis_stress_test",
+      },
+      {
+        id: 81, tier: 2, rank: 17, watchBy: "1 week",
+        date: "3/25", time: "13:30-14:30", track: "十五电新",
+        title: "储能、动力电池2026年展望",
+        speaker: "特邀嘉宾",
+        reason: "Energy storage is the bridge between new energy generation and grid stability — and increasingly relevant to AI data center backup power. A blind spot that connects to your power thesis.",
+        themes: ["new_energy", "ev"],
+        horizon: "2026-2030",
+        framework: "blind_spot",
+      },
+      {
+        id: 103, tier: 2, rank: 18, watchBy: "1 week",
+        date: "3/26", time: "09:00-09:30", track: "⑲大宗商品",
+        title: "贵金属大势研判",
+        speaker: "刘雨萱 - 国泰君安期货高级分析师",
+        reason: "Gold macro call — relevant as a portfolio hedge and a signal on global macro risk appetite. With de-dollarization in your structural thesis, precious metals positioning matters.",
+        themes: ["commodities", "macro"],
+        horizon: "2026-2028",
+        framework: "information_decay",
+      },
+      {
+        id: 59, tier: 2, rank: 19, watchBy: "1 week",
+        date: "3/25", time: "13:30-14:15", track: "十一国别研究",
+        title: "国际地缘政治变化与中美关系走向",
+        speaker: "特邀嘉宾",
+        reason: "The macro backdrop for everything. You got the structural view in Track ⑧ morning, but this is the US-China specific deep dive. Tariff escalation, tech decoupling, Taiwan risk — all feed into your portfolio risk.",
+        themes: ["geopolitics", "us_macro"],
+        horizon: "2026-2030",
+        framework: "thesis_stress_test",
+      },
+
+      // === TIER 3: WATCH WITHIN 2 WEEKS (Deepening + long-term conviction) ===
+      {
+        id: 25, tier: 3, rank: 20, watchBy: "2 weeks",
+        date: "3/24", time: "14:30-15:00", track: "④AI存储/CPU",
+        title: "AI时代的算力底座：安全如何成为核心竞争力",
+        speaker: "应志伟 - 海光信息软件与安全部副总裁",
+        reason: "海光信息 is one of the key domestic GPU/CPU plays (HYGON). Their VP talking about security as competitive advantage reveals how they're positioning against Nvidia restrictions. Directly relevant to 国产替代.",
+        themes: ["ai_compute", "ai_infra", "guochan_tidai"],
+        horizon: "2026-2030",
+        framework: "thesis_stress_test",
+      },
+      {
+        id: 55, tier: 3, rank: 21, watchBy: "2 weeks",
+        date: "3/25", time: "09:30-10:00", track: "⑩海外科技",
+        title: "北美和国内AI大模型的发展现状及技术更新",
+        speaker: "特邀嘉宾",
+        reason: "Cross-Pacific LLM comparison — useful for calibrating the actual gap between US and Chinese AI capabilities. You probably have your own views here, but the Chinese sell-side framing of the gap matters for sentiment.",
+        themes: ["ai_models", "us_tech", "guochan_tidai"],
+        horizon: "2026-2030",
+        framework: "blind_spot",
+      },
+      {
+        id: 44, tier: 3, rank: 22, watchBy: "2 weeks",
+        date: "3/25", time: "10:30-11:00", track: "⑦通信",
+        title: "人工智能算力网络高速互联的技术演进",
+        speaker: "特邀嘉宾",
+        reason: "The networking layer of AI infrastructure — interconnect speeds constrain cluster scale. Technical but important for understanding whether domestic AI infra can scale to frontier model training.",
+        themes: ["ai_compute", "ai_infra", "telecom"],
+        horizon: "2026-2030",
+        framework: "thesis_stress_test",
+      },
+      {
+        id: 82, tier: 3, rank: 23, watchBy: "2 weeks",
+        date: "3/25", time: "14:30-15:30", track: "十五电新",
+        title: "碳酸锂2026年见底回升",
+        speaker: "特邀嘉宾",
+        reason: "Lithium carbonate bottoming is a contrarian call that affects the entire EV/battery/energy storage chain. If correct, it reprices oversold new energy names. A sector you're not watching that could move fast.",
+        themes: ["new_energy", "materials", "commodities"],
+        horizon: "2026-2028",
+        framework: "blind_spot",
+      },
+      {
+        id: 95, tier: 3, rank: 24, watchBy: "2 weeks",
+        date: "3/26", time: "11:00-11:30", track: "十七机器人/航天",
+        title: "卫星载荷的现状与展望",
+        speaker: "特邀嘉宾 - 斯北图投融资负责人",
+        reason: "You'll be in Track ⑰ but may have stepped out for the AI electricity session. Satellite payload is the business model layer of commercial space — where the revenue actually comes from.",
+        themes: ["satellite", "space"],
+        horizon: "3-5 years",
+        framework: "blind_spot",
+      },
+      {
+        id: 96, tier: 3, rank: 25, watchBy: "2 weeks",
+        date: "3/26", time: "11:30-12:00", track: "十七机器人/航天",
+        title: "中国商业火箭的现状与展望",
+        speaker: "特邀嘉宾 - 航天易龙火箭动力系统负责人",
+        reason: "Operator-level view on Chinese launch vehicle economics. Rocket reusability and cost curves determine whether the commercial space thesis is viable at scale.",
+        themes: ["space", "frontier"],
+        horizon: "3-10 years",
+        framework: "non_reconstructible",
+      },
+      {
+        id: 127, tier: 3, rank: 26, watchBy: "2 weeks",
+        date: "3/26", time: "16:30-17:30", track: "㉓Z世代新能源",
+        title: "商业航天：太空算力",
+        speaker: "特邀嘉宾",
+        reason: "The wildest card in the conference. Space-based computing is pre-investable but understanding the concept now means you'll recognize the inflection when it comes. Low probability, huge optionality.",
+        themes: ["space", "ai_compute", "frontier"],
+        horizon: "5-10 years",
+        framework: "blind_spot",
+      },
+      {
+        id: 72, tier: 3, rank: 27, watchBy: "2 weeks",
+        date: "3/25", time: "15:00-15:45", track: "十三固收",
+        title: "不囿方寸，债适新途：重塑固收资产的配置逻辑",
+        speaker: "唐元懋 - 固定收益研究首席分析师",
+        reason: "You'll see 唐元懋 on Day 1 (if you catch him) on rate repricing. This is his Day 2 follow-up on how to actually allocate around the new rate regime. Operational complement to the macro view.",
+        themes: ["fixed_income", "asset_allocation"],
+        horizon: "2026-2028",
+        framework: "thesis_stress_test",
+      },
+      {
+        id: 101, tier: 3, rank: 28, watchBy: "2 weeks",
+        date: "3/26", time: "10:30-11:00", track: "⑱国企改革/低估值",
+        title: "航空：提振消费叠加反内卷，超级周期乐观可期",
+        speaker: "岳鑫 - 交通运输研究首席分析师",
+        reason: "Another 反内卷 data point — airlines. If the policy direction holds across power, metals, logistics, AND airlines, this is a broad-based regime change. Accumulating evidence matters.",
+        themes: ["consumption", "anti_involution", "logistics"],
+        horizon: "2026-2028",
+        framework: "thesis_stress_test",
+      },
+      {
+        id: 46, tier: 3, rank: 29, watchBy: "2 weeks",
+        date: "3/25", time: "11:30-12:00", track: "⑦通信",
+        title: '卫星通信："天基光纤"的现状与未来',
+        speaker: "特邀嘉宾",
+        reason: "Space-based fiber optic networks — connects to the satellite theme and the broader frontier tech conviction. Long-horizon but the infrastructure is being built now.",
+        themes: ["satellite", "telecom", "frontier"],
+        horizon: "5-10 years",
+        framework: "blind_spot",
+      },
+      {
+        id: 80, tier: 3, rank: 30, watchBy: "2 weeks",
+        date: "3/25", time: "16:30-17:00", track: "十四医药",
+        title: "2026年医药行业策略",
+        speaker: "国泰海通证券医药分析师",
+        reason: "The house pharma strategy call — gives you the investable framework for the sector after you've absorbed the R&D landscape from the earlier pharma sessions.",
+        themes: ["pharma"],
+        horizon: "2026",
+        framework: "blind_spot",
+      },
+    ];
+
+    // Priority framework labels
+    const FRAMEWORK_LABELS = {
+      information_decay: { label: "Info Decay", color: "#E63946", icon: "⏰" },
+      blind_spot: { label: "Blind Spot", color: "#7209B7", icon: "🔭" },
+      thesis_stress_test: { label: "Stress Test", color: "#F77F00", icon: "🎯" },
+      non_reconstructible: { label: "Must Watch", color: "#2EC4B6", icon: "👁" },
+    };
+
+    const TIER_LABELS = {
+      1: { label: "WATCH WITHIN 3 DAYS", color: "#E63946", desc: "Information decays fast — actionable signals" },
+      2: { label: "WATCH WITHIN 1 WEEK", color: "#F77F00", desc: "Blind spots & thesis stress tests" },
+      3: { label: "WATCH WITHIN 2 WEEKS", color: "#2EC4B6", desc: "Long-term conviction building" },
+    };
+
+    const HORIZON_COLORS = {
+      "2026": "#E63946",
+      "2026-2028": "#F77F00",
+      "2026-2030": "#FCBF49",
+      "3-5 years": "#2EC4B6",
+      "3-10 years": "#20A4F3",
+      "5-10 years": "#7209B7",
+    };
+
+    function ReplayWatchlist() {
+      const [selectedTier, setSelectedTier] = useState(null);
+      const [selectedFramework, setSelectedFramework] = useState(null);
+      const [expandedId, setExpandedId] = useState(null);
+
+      const filtered = useMemo(() => {
+        let items = REPLAY_SESSIONS;
+        if (selectedTier) items = items.filter(s => s.tier === selectedTier);
+        if (selectedFramework) items = items.filter(s => s.framework === selectedFramework);
+        return items;
+      }, [selectedTier, selectedFramework]);
+
+      const tierCounts = useMemo(() => {
+        const c = { 1: 0, 2: 0, 3: 0 };
+        REPLAY_SESSIONS.forEach(s => c[s.tier]++);
+        return c;
+      }, []);
+
+      const fwCounts = useMemo(() => {
+        const c = {};
+        REPLAY_SESSIONS.forEach(s => {
+          c[s.framework] = (c[s.framework] || 0) + 1;
+        });
+        return c;
+      }, []);
+
+      // Total watch time estimate (avg 35 min per session at 1.5x = ~23 min)
+      const totalMinutes = filtered.length * 23;
+      const totalHours = (totalMinutes / 60).toFixed(1);
+
+      return (
+        <div style={{
+          fontFamily: "'Instrument Sans', 'Noto Sans SC', sans-serif",
+          background: "var(--bg)",
+          color: "var(--text)",
+          minHeight: "100vh",
+          padding: "24px 16px",
+          maxWidth: 860,
+          margin: "0 auto",
+        }}>
+          <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet" />
+          <style>{`
+            :root {
+              --bg: #08080c;
+              --text: #e4e2de;
+              --card: #111116;
+              --card-hover: #19191f;
+              --border: #252530;
+              --muted: #6a6a7a;
+            }
+            @media (prefers-color-scheme: light) {
+              :root {
+                --bg: #faf9f6;
+                --text: #1a1a2e;
+                --card: #ffffff;
+                --card-hover: #f5f3f0;
+                --border: #e2dfda;
+                --muted: #8a8a9a;
+              }
+            }
+            * { box-sizing: border-box; margin: 0; padding: 0; }
+
+            .tier-btn {
+              padding: 8px 16px;
+              border-radius: 8px;
+              font-size: 12px;
+              font-weight: 600;
+              border: 1.5px solid var(--border);
+              background: var(--card);
+              color: var(--text);
+              cursor: pointer;
+              transition: all 0.15s;
+              display: flex;
+              align-items: center;
+              gap: 6px;
+            }
+            .tier-btn:hover { background: var(--card-hover); }
+            .tier-btn.active { border-color: currentColor; box-shadow: 0 0 0 1px currentColor; }
+
+            .fw-chip {
+              padding: 5px 10px;
+              border-radius: 16px;
+              font-size: 11px;
+              font-weight: 500;
+              border: 1px solid var(--border);
+              background: var(--card);
+              color: var(--muted);
+              cursor: pointer;
+              transition: all 0.15s;
+              white-space: nowrap;
+            }
+            .fw-chip:hover { color: var(--text); }
+            .fw-chip.active { border-color: currentColor; color: var(--text); }
+
+            .replay-card {
+              background: var(--card);
+              border: 1px solid var(--border);
+              border-radius: 12px;
+              padding: 16px 18px;
+              margin-bottom: 10px;
+              cursor: pointer;
+              transition: all 0.15s;
+              position: relative;
+              overflow: hidden;
+            }
+            .replay-card:hover { background: var(--card-hover); }
+            .replay-card::before {
+              content: '';
+              position: absolute;
+              left: 0;
+              top: 0;
+              bottom: 0;
+              width: 3px;
+            }
+
+            .rank-num {
+              font-size: 28px;
+              font-weight: 700;
+              opacity: 0.12;
+              position: absolute;
+              right: 16px;
+              top: 12px;
+              font-variant-numeric: tabular-nums;
+            }
+
+            .meta-row {
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              margin-bottom: 8px;
+              flex-wrap: wrap;
+            }
+            .date-badge {
+              font-size: 10.5px;
+              font-weight: 700;
+              padding: 2px 7px;
+              border-radius: 4px;
+              background: var(--border);
+            }
+            .time-text {
+              font-size: 11.5px;
+              color: var(--muted);
+              font-variant-numeric: tabular-nums;
+            }
+            .track-text {
+              font-size: 10.5px;
+              color: var(--muted);
+            }
+            .horizon-badge {
+              font-size: 10px;
+              font-weight: 600;
+              padding: 2px 7px;
+              border-radius: 10px;
+              border: 1px solid;
+              margin-left: auto;
+            }
+
+            .title-text {
+              font-size: 15px;
+              font-weight: 600;
+              line-height: 1.4;
+              margin-bottom: 4px;
+              padding-right: 40px;
+            }
+            .speaker-text {
+              font-size: 12px;
+              color: var(--muted);
+              line-height: 1.4;
+              margin-bottom: 0;
+            }
+            .reason-text {
+              font-size: 12.5px;
+              line-height: 1.6;
+              color: var(--text);
+              opacity: 0.85;
+              margin-top: 12px;
+              padding-top: 12px;
+              border-top: 1px solid var(--border);
+            }
+            .fw-tag {
+              display: inline-flex;
+              align-items: center;
+              gap: 4px;
+              font-size: 10px;
+              font-weight: 600;
+              padding: 2px 8px;
+              border-radius: 4px;
+              opacity: 0.8;
+            }
+            .tier-divider {
+              padding: 20px 0 12px;
+              border-bottom: 2px solid var(--border);
+              margin-bottom: 14px;
+            }
+            .tier-divider h2 {
+              font-size: 14px;
+              font-weight: 700;
+              letter-spacing: 1px;
+              margin-bottom: 4px;
+            }
+            .tier-divider p {
+              font-size: 12px;
+              color: var(--muted);
+            }
+            .stats-bar {
+              display: flex;
+              gap: 16px;
+              padding: 14px 0;
+              border-bottom: 1px solid var(--border);
+              margin-bottom: 16px;
+            }
+            .stat-item {
+              display: flex;
+              flex-direction: column;
+              gap: 2px;
+            }
+            .stat-value {
+              font-size: 20px;
+              font-weight: 700;
+            }
+            .stat-label {
+              font-size: 10px;
+              color: var(--muted);
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+            }
+            .clear-link {
+              font-size: 11px;
+              color: var(--muted);
+              cursor: pointer;
+              text-decoration: underline;
+              text-underline-offset: 2px;
+            }
+            .clear-link:hover { color: var(--text); }
+          `}</style>
+
+          <h1 style={{ fontSize: 20, fontWeight: 700, marginBottom: 4, lineHeight: 1.3 }}>
+            Replay Watchlist — Ranked
+          </h1>
+          <p style={{ fontSize: 12.5, color: "var(--muted)", lineHeight: 1.5, marginBottom: 16 }}>
+            30 sessions ranked by priority. At 1.5× speed (~23 min each), that's ~{(30 * 23 / 60).toFixed(0)} hours total.
+          </p>
+
+          <div className="stats-bar">
+            <div className="stat-item">
+              <span className="stat-value">{filtered.length}</span>
+              <span className="stat-label">Sessions</span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-value">~{totalHours}h</span>
+              <span className="stat-label">at 1.5× speed</span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-value">{filtered.filter(s => s.tier === 1).length}</span>
+              <span className="stat-label">Urgent (3 days)</span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-value">{filtered.filter(s => s.horizon.includes("5") || s.horizon.includes("10")).length}</span>
+              <span className="stat-label">Long-horizon</span>
+            </div>
+          </div>
+
+          {/* Tier filters */}
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
+            {[1, 2, 3].map(tier => (
+              <button
+                key={tier}
+                className={`tier-btn ${selectedTier === tier ? "active" : ""}`}
+                style={selectedTier === tier ? { color: TIER_LABELS[tier].color, borderColor: TIER_LABELS[tier].color } : {}}
+                onClick={() => setSelectedTier(selectedTier === tier ? null : tier)}
+              >
+                <span style={{ width: 8, height: 8, borderRadius: "50%", background: TIER_LABELS[tier].color }} />
+                {TIER_LABELS[tier].label}
+                <span style={{ opacity: 0.5 }}>{tierCounts[tier]}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Framework filters */}
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
+            {Object.entries(FRAMEWORK_LABELS).map(([key, fw]) => (
+              <button
+                key={key}
+                className={`fw-chip ${selectedFramework === key ? "active" : ""}`}
+                style={selectedFramework === key ? { color: fw.color, borderColor: fw.color } : {}}
+                onClick={() => setSelectedFramework(selectedFramework === key ? null : key)}
+              >
+                {fw.icon} {fw.label} ({fwCounts[key] || 0})
+              </button>
+            ))}
+            {(selectedTier || selectedFramework) && (
+              <span className="clear-link" onClick={() => { setSelectedTier(null); setSelectedFramework(null); }}>
+                Clear filters
+              </span>
+            )}
+          </div>
+
+          {/* Sessions list */}
+          <div style={{ marginTop: 16 }}>
+            {(() => {
+              let lastTier = null;
+              return filtered.map(session => {
+                const showDivider = session.tier !== lastTier;
+                lastTier = session.tier;
+                const tierInfo = TIER_LABELS[session.tier];
+                const fwInfo = FRAMEWORK_LABELS[session.framework];
+                const hColor = HORIZON_COLORS[session.horizon] || "var(--muted)";
+                const isExpanded = expandedId === session.id;
+
+                return (
+                  <div key={session.id}>
+                    {showDivider && !selectedTier && (
+                      <div className="tier-divider">
+                        <h2 style={{ color: tierInfo.color }}>{tierInfo.label}</h2>
+                        <p>{tierInfo.desc}</p>
+                      </div>
+                    )}
+                    <div
+                      className="replay-card"
+                      style={{ "--accent": tierInfo.color }}
+                      onClick={() => setExpandedId(isExpanded ? null : session.id)}
+                    >
+                      <div style={{
+                        position: "absolute", left: 0, top: 0, bottom: 0, width: 3,
+                        background: tierInfo.color, opacity: 0.7,
+                      }} />
+                      <span className="rank-num" style={{ color: tierInfo.color }}>
+                        {String(session.rank).padStart(2, "0")}
+                      </span>
+
+                      <div className="meta-row">
+                        <span className="date-badge">{session.date}</span>
+                        <span className="time-text">{session.time}</span>
+                        <span className="track-text">{session.track}</span>
+                        <span
+                          className="fw-tag"
+                          style={{ background: fwInfo.color + "18", color: fwInfo.color }}
+                        >
+                          {fwInfo.icon} {fwInfo.label}
+                        </span>
+                        <span
+                          className="horizon-badge"
+                          style={{ color: hColor, borderColor: hColor + "60" }}
+                        >
+                          {session.horizon}
+                        </span>
+                      </div>
+
+                      <div className="title-text">{session.title}</div>
+                      <div className="speaker-text">{session.speaker}</div>
+
+                      {isExpanded && (
+                        <div className="reason-text">{session.reason}</div>
+                      )}
+                    </div>
+                  </div>
+                );
+              });
+            })()}
+          </div>
+
+          <div style={{
+            marginTop: 24, padding: 16, background: "var(--card)",
+            border: "1px solid var(--border)", borderRadius: 10,
+            fontSize: 12.5, lineHeight: 1.6, color: "var(--muted)",
+          }}>
+            <strong style={{ color: "var(--text)" }}>Watching schedule suggestion:</strong><br />
+            Week 1 (Days 1-3 post-conference): Tier 1 sessions — 7 replays, ~2.7 hours. These are the ones where information decays fastest and market positioning happens.<br />
+            Week 1 (Days 4-7): Tier 2 sessions — 12 replays, ~4.6 hours. Blind spots and thesis stress tests while the conference context is still fresh in your mind.<br />
+            Week 2: Tier 3 sessions — 11 replays, ~4.2 hours. Long-term conviction building. Watch these when you have mental space to think, not between meetings.
+          </div>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<ReplayWatchlist />);
+  </script>
+</body>
+</html>
