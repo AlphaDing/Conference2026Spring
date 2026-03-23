@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Day 1 Conference Notes</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useCallback, useMemo } = React;
+
+        // =============================================
+        // DATA & FRAMEWORKS
+        // =============================================
+        const SESSIONS = [
+          {
+            id: "opening",
+            time: "09:00-09:10",
+            title: "致辞",
+            speaker: "李俊杰 - 国泰海通总裁",
+            track: "Main Forum",
+            context: "Opening address from the president of the newly merged 国泰海通. The merger narrative and strategic priorities reveal where the industry sees growth.",
+            signals: [
+              {
+                id: "merger_focus",
+                label: "Strategic focus of merged entity",
+                type: "spectrum",
+                left: "Traditional brokerage / wealth mgmt",
+                right: "Tech / AI / international",
+                note: "Where he spends time = where the firm invests resources",
+              },
+              {
+                id: "market_tone",
+                label: "Market sentiment tone",
+                type: "spectrum",
+                left: "Cautious / 'challenges'",
+                right: "Optimistic / 'opportunities'",
+                note: "The president sees aggregate client flow data — his tone is a sentiment indicator",
+              },
+            ],
+            listenFor: [
+              { id: "sectors_mentioned", text: "Which sectors does he mention most? (list them)" },
+              { id: "client_segments", text: "Which client segments emphasized? (institutional / retail / intl)" },
+              { id: "any_numbers", text: "Any specific figures on AUM, client growth, or market share?" },
+            ],
+            freeNote: true,
+          },
+          {
+            id: "hai_wen",
+            time: "09:10-10:00",
+            title: "中国宏观经济和政策展望",
+            speaker: "海闻 - 北京大学/汇丰商学院创院院长",
+            track: "Main Forum",
+            context: "Academic economist, less compliance-constrained than sell-side. His audience includes policymakers. Listen for what policy transmission mechanism he emphasizes — that determines which sectors get funded.",
+            signals: [
+              {
+                id: "growth_gap",
+                label: "GDP growth: current trajectory vs target",
+                type: "spectrum",
+                left: "On track under current policy",
+                right: "Needs significant additional stimulus",
+                note: "The gap = the size of expected policy intervention",
+              },
+              {
+                id: "transmission",
+                label: "Policy transmission mechanism",
+                type: "multi",
+                options: ["Fiscal (infra / local govt bonds)", "Monetary (rate cuts / credit)", "Consumption (vouchers / property)", "Industrial policy (新质生产力)", "Not clearly specified"],
+                note: "Each implies a different sector playbook",
+              },
+              {
+                id: "deflation",
+                label: "Deflation risk assessment",
+                type: "spectrum",
+                left: "Resolved / reflating",
+                right: "Ongoing risk / structural",
+                note: "If ongoing → your rate and fixed income positioning matters more",
+              },
+              {
+                id: "household",
+                label: "Household balance sheet assessment",
+                type: "spectrum",
+                left: "Still deleveraging / cautious",
+                right: "Recovering / spending again",
+                note: "If deleveraging continues → consumption ETFs are premature",
+              },
+            ],
+            listenFor: [
+              { id: "gdp_number", text: "Specific GDP growth number or range mentioned?" },
+              { id: "xinzhi", text: "How does he interpret 新质生产力? Which sectors?" },
+              { id: "labor_market", text: "Youth unemployment or labor market comments?" },
+              { id: "property_role", text: "What role does property play in his macro framework?" },
+              { id: "timeline", text: "When does he expect recovery inflection? (Q specific)" },
+            ],
+            freeNote: true,
+          },
+          {
+            id: "us_macro",
+            time: "10:00-10:40",
+            title: "美国经济和货币政策展望",
+            speaker: "特邀嘉宾 (unnamed)",
+            track: "Main Forum",
+            context: "The unnamed speaker is the most interesting signal — their identity reveals the sensitivity level. When they introduce themselves, note exact title and affiliation. This changes how you weight everything.",
+            signals: [
+              {
+                id: "speaker_identity",
+                label: "Speaker identity (fill in when revealed)",
+                type: "text",
+                note: "Exact title + affiliation. Government? Academic? Think tank? Former Fed?",
+              },
+              {
+                id: "fed_path",
+                label: "Fed rate path view",
+                type: "spectrum",
+                left: "Higher for longer / no cuts 2026",
+                right: "Cutting cycle / multiple cuts",
+                note: "Directly affects USD/CNY → your entire Chinese portfolio",
+              },
+              {
+                id: "us_recession",
+                label: "US recession probability",
+                type: "spectrum",
+                left: "Soft landing / no recession",
+                right: "Recession likely / imminent",
+                note: "US recession = risk-off globally but potential for faster Fed cuts",
+              },
+              {
+                id: "decoupling",
+                label: "US-China financial decoupling trajectory",
+                type: "spectrum",
+                left: "Stabilizing / selective",
+                right: "Accelerating / broad-based",
+                note: "Rare to hear US-side perspective at Chinese conference — take detailed notes",
+              },
+            ],
+            listenFor: [
+              { id: "rate_timing", text: "Specific timing for Fed action? (which meeting / quarter)" },
+              { id: "rate_magnitude", text: "How many basis points of cuts/hikes expected?" },
+              { id: "inflation_view", text: "Inflation: which components sticky? Services? Shelter?" },
+              { id: "capital_flows", text: "Any mention of capital flow dynamics between US and China?" },
+              { id: "audience_reaction", text: "What questions does the audience ask? (reveals consensus positioning)" },
+            ],
+            freeNote: true,
+          },
+          {
+            id: "middle_east",
+            time: "10:40-11:20",
+            title: "中东问题的现状和未来",
+            speaker: "廖百智 - CICIR中东研究所所长",
+            track: "Main Forum",
+            context: "CICIR feeds analysis directly to China's foreign policy establishment. His views reflect state apparatus thinking. Don't listen for the Middle East per se — listen for what it reveals about China's strategic posture.",
+            signals: [
+              {
+                id: "china_role",
+                label: "China's positioning in the Middle East",
+                type: "multi",
+                options: ["Mediator / diplomatic", "Commercial partner / energy", "Security provider", "Opportunistic / filling US vacuum"],
+                note: "Each implies different energy security + Belt & Road trajectory",
+              },
+              {
+                id: "oil_supply",
+                label: "Oil supply risk assessment",
+                type: "spectrum",
+                left: "Stable / manageable",
+                right: "Escalation risk / disruption possible",
+                note: "Flows into inflation expectations → affects rate thesis globally",
+              },
+              {
+                id: "us_engagement",
+                label: "US commitment to the region",
+                type: "spectrum",
+                left: "Re-engaging / committed",
+                right: "Disengaging / pivoting away",
+                note: "US disengagement = China fills vacuum differently",
+              },
+            ],
+            listenFor: [
+              { id: "saudi_china", text: "Any mention of Saudi-China energy trade or petro-yuan?" },
+              { id: "brics", text: "BRICS+ coordination mentioned? In what context?" },
+              { id: "iran_nuclear", text: "Iran nuclear deal trajectory — what's his read?" },
+              { id: "energy_diversification", text: "China's energy import diversification strategy?" },
+            ],
+            freeNote: true,
+          },
+          {
+            id: "lenovo_ai",
+            time: "11:20-12:00",
+            title: "AI工厂进入跃迁时代",
+            speaker: "黄山 - Lenovo ISG China, CSO",
+            track: "Main Forum",
+            context: "Operator deploying AI compute infrastructure at scale. This is primary-source data, not analyst estimates. Write down every specific number. Whatever he spends most time on is the binding constraint.",
+            signals: [
+              {
+                id: "bottleneck",
+                label: "Primary bottleneck for AI infra deployment",
+                type: "multi",
+                options: ["Chip supply", "Power / cooling", "Talent / operations", "Software stack", "Customer demand", "Capital / funding"],
+                note: "If power → validates Day 3 electricity sessions. If chips → validates 国产替代.",
+              },
+              {
+                id: "domestic_ratio",
+                label: "Domestic vs imported compute in deployments",
+                type: "spectrum",
+                left: "Mostly imported (NVIDIA stockpile)",
+                right: "Significant domestic (华为/海光)",
+                note: "The ratio tells you how real 国产替代 is at infrastructure level",
+              },
+              {
+                id: "phase_transition",
+                label: "What specifically is the '跃迁' (phase transition)?",
+                type: "multi",
+                options: ["Experimentation → production workloads", "Cloud → edge/on-premise", "Training → inference shift", "Single company → industry-wide adoption"],
+                note: "Each implies different capex cycle beneficiaries",
+              },
+              {
+                id: "customer_mix",
+                label: "Where is demand coming from?",
+                type: "multi",
+                options: ["Internet companies (BAT)", "State-owned enterprises", "Manufacturing / industrial", "Government / public sector", "Financial services"],
+                note: "SOE adoption = govt-directed demand (durable). Internet = market-driven (cyclical).",
+              },
+            ],
+            listenFor: [
+              { id: "gpu_numbers", text: "Any specific numbers: cluster sizes, DC builds, order pipeline?" },
+              { id: "power_consumption", text: "Power consumption figures per rack/cluster?" },
+              { id: "cost_per_unit", text: "Cost metrics: $/FLOP, $/token, TCO comparisons?" },
+              { id: "timeline", text: "Deployment timeline: what's shipping now vs 6-12 months?" },
+              { id: "off_slide", text: "⚡ What did he say that WASN'T on the slide? (write verbatim)" },
+            ],
+            freeNote: true,
+          },
+          {
+            id: "ai_agent",
+            time: "13:30-14:10",
+            title: "投研Agent：AI研究员元年",
+            speaker: "崔予淳 - 讯兔科技/Alpha派 联合创始人",
+            track: "Track ②",
+            context: "AI agents for investment research. Personally relevant — does this threaten or complement your analytical approach? Listen for what it actually does vs. demo hype.",
+            signals: [
+              {
+                id: "automation_level",
+                label: "Actual automation capability",
+                type: "spectrum",
+                left: "Copilot / assists human analyst",
+                right: "Autonomous / end-to-end without review",
+                note: "The gap between demo and production tells you the real state of the tech",
+              },
+              {
+                id: "buyer_type",
+                label: "Who's buying?",
+                type: "multi",
+                options: ["Quant funds", "Sell-side analysts", "Buy-side PMs", "Retail / wealth mgmt", "Nobody yet / pre-revenue"],
+                note: "Quant adoption = actually works. Retail = marketing. No buyers = vaporware.",
+              },
+              {
+                id: "threat_level",
+                label: "Threat to your own analytical edge?",
+                type: "spectrum",
+                left: "No threat / different workflow",
+                right: "Direct threat / replicates what I do",
+                note: "Honest self-assessment: can this do policy reading + thematic synthesis?",
+              },
+            ],
+            listenFor: [
+              { id: "data_sources", text: "What data sources does the agent access? (public vs alternative)" },
+              { id: "specific_tasks", text: "Which specific tasks can it handle end-to-end?" },
+              { id: "failure_modes", text: "What does it get wrong? Any candid limitations shared?" },
+              { id: "pricing", text: "Pricing model or customer metrics mentioned?" },
+            ],
+            freeNote: true,
+          },
+          {
+            id: "deepglint",
+            time: "14:10-14:50",
+            title: "打造\"中国版TPU\"，布局AI多元场景",
+            speaker: "陈宁 - 云天励飞 CEO",
+            track: "Track ②",
+            context: "CEO of a publicly listed Chinese AI chip company. This is company-level view on domestic AI compute. The 'TPU' framing (not GPU) implies different architecture — listen for whether it's genuine differentiation or marketing.",
+            signals: [
+              {
+                id: "vs_nvidia",
+                label: "Competitive gap with NVIDIA",
+                type: "spectrum",
+                left: "2+ generations behind",
+                right: "Competitive for key workloads",
+                note: "If talking inference only (not training) → still a big gap. Training at scale = milestone.",
+              },
+              {
+                id: "tpu_framing",
+                label: "The 'TPU' positioning",
+                type: "spectrum",
+                left: "Marketing label / general purpose",
+                right: "Genuine ASIC differentiation",
+                note: "Google's TPU is application-specific. Is his chip actually different from GPU arch?",
+              },
+              {
+                id: "customer_traction",
+                label: "Customer profile",
+                type: "multi",
+                options: ["Government / surveillance (legacy)", "Commercial AI training", "Inference at scale", "Edge / IoT deployment", "Auto / robotics"],
+                note: "Govt surveillance = legacy revenue. Commercial AI = growth story.",
+              },
+            ],
+            listenFor: [
+              { id: "chip_specs", text: "Any specific performance numbers? TOPS, power efficiency?" },
+              { id: "production_volume", text: "Fab partner? Production volume / yield rate?" },
+              { id: "funding", text: "Subsidy, funding, or government support mentioned?" },
+              { id: "workloads", text: "Which specific AI workloads can their chip handle?" },
+            ],
+            freeNote: true,
+          },
+          {
+            id: "power_136",
+            time: "15:30-16:00",
+            title: "136号文和电力反内卷",
+            speaker: "胡鸿程 - 国泰海通证券公用事业研究分析师",
+            track: "Track ⑤",
+            context: "Document 136 is a specific policy document. This is concrete regulatory analysis. The key question: is this a template that extends to other sectors, or electricity-specific?",
+            signals: [
+              {
+                id: "mechanism",
+                label: "Policy mechanism type",
+                type: "multi",
+                options: ["Price floors", "Capacity coordination", "Consolidation incentives", "Margin protection mandates", "Penalty enforcement"],
+                note: "Each mechanism creates different winners/losers",
+              },
+              {
+                id: "enforcement",
+                label: "Enforcement credibility",
+                type: "spectrum",
+                left: "Direction only / no teeth",
+                right: "Specific penalties / implementation dates",
+                note: "'Direction is clear' ≠ 'Q3 penalties take effect'. Listen for specifics.",
+              },
+              {
+                id: "template",
+                label: "Is this a template for other sectors?",
+                type: "spectrum",
+                left: "Electricity-specific",
+                right: "Replicable policy model",
+                note: "If template → the next two sessions (metals, logistics) are one story, not three",
+              },
+            ],
+            listenFor: [
+              { id: "companies_named", text: "Which power companies named or implied as beneficiaries?" },
+              { id: "doc_specifics", text: "What exactly does 136号文 mandate? Specific provisions?" },
+              { id: "timeline", text: "Implementation timeline? When do provisions take effect?" },
+              { id: "margin_impact", text: "Any quantification of margin impact? Basis points?" },
+            ],
+            freeNote: true,
+          },
+          {
+            id: "metals_involution",
+            time: "16:00-16:30",
+            title: "反内卷下的金属投资机会",
+            speaker: "魏雨迪 - 国泰海通证券金属新材料研究分析师",
+            track: "Track ⑤",
+            context: "Second of three 反内卷 sessions. Cross-reference with electricity — is this the same policy logic extending, or a separate story with a shared label?",
+            signals: [
+              {
+                id: "same_policy",
+                label: "Same policy logic as electricity 反内卷?",
+                type: "spectrum",
+                left: "Different mechanism / sector-specific",
+                right: "Same top-down policy regime shift",
+                note: "If coherent with electricity → major cross-sector rotation signal",
+              },
+              {
+                id: "price_vs_volume",
+                label: "Investment thesis driver",
+                type: "spectrum",
+                left: "Volume stabilization (revenue stability)",
+                right: "Price recovery (margin expansion)",
+                note: "Different portfolio positioning required for each",
+              },
+            ],
+            listenFor: [
+              { id: "which_metals", text: "Which specific metals? (aluminum / copper / steel / rare earths)" },
+              { id: "policy_ref", text: "Does he reference 136号文 or a different policy document?" },
+              { id: "overcapacity", text: "Overcapacity situation — being addressed how?" },
+              { id: "companies", text: "Specific company or sub-sector mentions?" },
+            ],
+            freeNote: true,
+          },
+          {
+            id: "logistics_involution",
+            time: "16:30-17:00",
+            title: "快递：深入反内卷下的投资机会",
+            speaker: "虞楠 - 国泰海通证券交通运输研究联席首席分析师",
+            track: "Track ⑤",
+            context: "Third 反内卷 session. By now, you have three data points. Your job: is this a coherent top-down policy regime shift, or three analysts each using a fashionable umbrella term for different stories?",
+            signals: [
+              {
+                id: "coherence",
+                label: "Cross-sector 反内卷 coherence (your assessment after 3 sessions)",
+                type: "spectrum",
+                left: "Separate stories / shared label only",
+                right: "Coherent regime shift / one policy direction",
+                note: "THIS IS THE KEY SYNTHESIS. If coherent = sector rotation trade. If not = weaker thesis.",
+              },
+              {
+                id: "price_war",
+                label: "Express delivery price war status",
+                type: "spectrum",
+                left: "Ongoing / intensifying",
+                right: "Ending / government intervention working",
+                note: "SF, ZTO, YTO price war has destroyed margins for years. Is it actually over?",
+              },
+            ],
+            listenFor: [
+              { id: "regulatory_action", text: "Specific regulatory actions? Minimum pricing? Consolidation?" },
+              { id: "margin_recovery", text: "Evidence of actual margin recovery? Which company?" },
+              { id: "policy_mechanism", text: "Same or different mechanism vs. electricity and metals?" },
+              { id: "skepticism", text: "Any hedging or skepticism in his own view? (note exact words)" },
+            ],
+            freeNote: true,
+          },
+        ];
+
+        const SYNTHESIS = [
+          {
+            id: "surprise",
+            question: "What was the single most surprising thing you heard today?",
+            hint: "Surprise = information value. If nothing surprised you, you already knew everything.",
+          },
+          {
+            id: "thesis_stronger",
+            question: "Which of your existing theses got STRONGER today? Be specific.",
+            hint: "e.g., '国产替代 thesis stronger because 黄山 showed 30% domestic chip ratio, up from 10% last year'",
+          },
+          {
+            id: "thesis_weaker",
+            question: "Which of your existing theses got WEAKER today? Be specific.",
+            hint: "e.g., 'Consumption recovery thesis weaker because 海闻 flagged ongoing household deleveraging'",
+          },
+          {
+            id: "involution_verdict",
+            question: "反内卷: Is it a coherent cross-sector policy regime shift or just a label?",
+            hint: "You heard 3 sessions on this. What's your verdict? Does it hold together?",
+          },
+          {
+            id: "unasked_question",
+            question: "What question do you wish you had asked? Bring it to Day 2.",
+            hint: "Write the specific question and which Day 2 session it's relevant for.",
+          },
+          {
+            id: "day2_adjustment",
+            question: "Based on today, should you adjust your Day 2 priorities?",
+            hint: "Any session that became more/less important based on what you learned today?",
+          },
+        ];
+
+        // =============================================
+        // MAIN COMPONENT
+        // =============================================
+
+        function ConferenceNotes() {
+          const [currentSession, setCurrentSession] = useState(0);
+          const [showSynthesis, setShowSynthesis] = useState(false);
+          const [notes, setNotes] = useState(() => {
+            const init = {};
+            SESSIONS.forEach(s => {
+              init[s.id] = {
+                signals: {},
+                checks: {},
+                freeNotes: "",
+              };
+            });
+            init._synthesis = {};
+            return init;
+          });
+
+          const session = SESSIONS[currentSession];
+
+          const setSignal = useCallback((sessionId, signalId, value) => {
+            setNotes(prev => ({
+              ...prev,
+              [sessionId]: {
+                ...prev[sessionId],
+                signals: { ...prev[sessionId].signals, [signalId]: value },
+              },
+            }));
+          }, []);
+
+          const toggleCheck = useCallback((sessionId, checkId) => {
+            setNotes(prev => ({
+              ...prev,
+              [sessionId]: {
+                ...prev[sessionId],
+                checks: { ...prev[sessionId].checks, [checkId]: !prev[sessionId].checks[checkId] },
+              },
+            }));
+          }, []);
+
+          const setFreeNote = useCallback((sessionId, text) => {
+            setNotes(prev => ({
+              ...prev,
+              [sessionId]: { ...prev[sessionId], freeNotes: text },
+            }));
+          }, []);
+
+          const setSynthesisNote = useCallback((qId, text) => {
+            setNotes(prev => ({
+              ...prev,
+              _synthesis: { ...prev._synthesis, [qId]: text },
+            }));
+          }, []);
+
+          const completionCount = useCallback((sId) => {
+            const sNotes = notes[sId];
+            if (!sNotes) return 0;
+            const signalCount = Object.keys(sNotes.signals).length;
+            const checkCount = Object.values(sNotes.checks).filter(Boolean).length;
+            const hasNotes = sNotes.freeNotes?.length > 0 ? 1 : 0;
+            return signalCount + checkCount + hasNotes;
+          }, [notes]);
+
+          return (
+            <div style={{
+              fontFamily: "'DM Sans', 'Noto Sans SC', sans-serif",
+              background: "var(--bg)",
+              color: "var(--text)",
+              minHeight: "100vh",
+              maxWidth: 480,
+              margin: "0 auto",
+              padding: "0 0 100px 0",
+            }}>
+              <style>{`
+                :root { --bg: #0a0a0f; --text: #e8e6e3; --card: #141419; --card-hover: #1c1c24; --border: #2a2a35; --muted: #6b6b7b; --accent: #E63946; }
+                @media (prefers-color-scheme: light) { :root { --bg: #f7f6f3; --text: #1a1a2e; --card: #ffffff; --card-hover: #f0eeeb; --border: #e0ddd8; --muted: #8a8a9a; --accent: #E63946; } }
+                * { box-sizing: border-box; margin: 0; padding: 0; }
+                textarea { font-family: inherit; }
+                .spectrum-track { position: relative; height: 36px; background: var(--card); border-radius: 18px; border: 1.5px solid var(--border); display: flex; align-items: center; cursor: pointer; overflow: hidden; }
+                .spectrum-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 18px; transition: width 0.15s; }
+                .spectrum-labels { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--muted); padding: 2px 4px 0; }
+                .multi-option { display: inline-flex; align-items: center; gap: 5px; padding: 7px 12px; border-radius: 20px; font-size: 12px; border: 1.5px solid var(--border); background: var(--card); color: var(--text); cursor: pointer; transition: all 0.12s; }
+                .multi-option.active { border-color: var(--accent); background: #E6394615; color: var(--accent); }
+                .check-item { display: flex; gap: 10px; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--border); cursor: pointer; }
+                .check-item:last-child { border-bottom: none; }
+                .check-box { width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--border); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 13px; transition: all 0.12s; margin-top: 1px; }
+                .check-box.checked { border-color: var(--accent); background: var(--accent); color: white; }
+                .check-text { font-size: 13px; line-height: 1.45; }
+                .check-text.checked { text-decoration: line-through; opacity: 0.5; }
+                .nav-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg); border-top: 1px solid var(--border); padding: 8px 12px; display: flex; gap: 6px; overflow-x: auto; z-index: 100; -webkit-overflow-scrolling: touch; }
+                .nav-pill { flex-shrink: 0; padding: 6px 12px; border-radius: 16px; font-size: 11px; font-weight: 600; border: 1.5px solid var(--border); background: var(--card); color: var(--muted); cursor: pointer; white-space: nowrap; transition: all 0.12s; position: relative; }
+                .nav-pill.active { border-color: var(--accent); color: var(--accent); background: #E6394610; }
+                .nav-pill .badge { position: absolute; top: -4px; right: -4px; background: var(--accent); color: white; font-size: 9px; width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+                .section-label { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; margin-top: 20px; }
+              `}</style>
+
+              <div style={{ padding: "16px 16px 0", position: "sticky", top: 0, background: "var(--bg)", zIndex: 50, borderBottom: "1px solid var(--border)", paddingBottom: 12 }}>
+                <div style={{ fontSize: 11, color: "var(--accent)", fontWeight: 700, letterSpacing: 0.5 }}>DAY 1 · MARCH 24</div>
+                <div style={{ fontSize: 17, fontWeight: 700, marginTop: 2 }}>
+                  {showSynthesis ? "End-of-Day Synthesis" : session.title}
+                </div>
+                <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
+                  {showSynthesis ? "15 minutes before sleep" : `${session.time} · ${session.speaker}`}
+                </div>
+              </div>
+
+              <div style={{ padding: "0 16px" }}>
+                {showSynthesis ? (
+                  <>
+                    <div style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.55, marginTop: 16, padding: "10px 12px", background: "var(--card)", borderRadius: 8, border: "1px solid var(--border)" }}>
+                      Before you sleep: spend 15 minutes on these. The act of writing forces synthesis. Your Day 2 will be sharper for it.
+                    </div>
+                    {SYNTHESIS.map(q => (
+                      <div key={q.id} style={{ marginTop: 20 }}>
+                        <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4, lineHeight: 1.4 }}>{q.question}</div>
+                        <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 8 }}>{q.hint}</div>
+                        <textarea
+                          value={notes._synthesis[q.id] || ""}
+                          onChange={e => setSynthesisNote(q.id, e.target.value)}
+                          placeholder="Write here..."
+                          style={{
+                            width: "100%", minHeight: 80, padding: 12, borderRadius: 8,
+                            border: "1.5px solid var(--border)", background: "var(--card)",
+                            color: "var(--text)", fontSize: 13, lineHeight: 1.5, resize: "vertical",
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </>
+                ) : (
+                  <>
+                    <div style={{
+                      marginTop: 16, padding: "10px 12px", background: "var(--card)",
+                      borderRadius: 8, border: "1px solid var(--border)",
+                      fontSize: 12.5, lineHeight: 1.55, color: "var(--muted)",
+                    }}>
+                      {session.context}
+                    </div>
+
+                    <div className="section-label">Signal Tracking</div>
+                    {session.signals.map(sig => (
+                      <div key={sig.id} style={{ marginBottom: 16 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 2 }}>{sig.label}</div>
+                        <div style={{ fontSize: 10.5, color: "var(--muted)", marginBottom: 6 }}>{sig.note}</div>
+
+                        {sig.type === "spectrum" && (
+                          <>
+                            <div
+                              className="spectrum-track"
+                              onClick={(e) => {
+                                const rect = e.currentTarget.getBoundingClientRect();
+                                const x = e.clientX - rect.left;
+                                const pct = Math.max(0, Math.min(100, (x / rect.width) * 100));
+                                setSignal(session.id, sig.id, Math.round(pct));
+                              }}
+                            >
+                              <div
+                                className="spectrum-fill"
+                                style={{
+                                  width: `${notes[session.id]?.signals[sig.id] ?? 50}%`,
+                                  background: `linear-gradient(90deg, #2D6A4F, #E63946)`,
+                                  opacity: notes[session.id]?.signals[sig.id] !== undefined ? 0.3 : 0.08,
+                                }}
+                              />
+                              {notes[session.id]?.signals[sig.id] !== undefined && (
+                                <div style={{
+                                  position: "absolute",
+                                  left: `${notes[session.id].signals[sig.id]}%`,
+                                  transform: "translateX(-50%)",
+                                  width: 14, height: 14, borderRadius: "50%",
+                                  background: "var(--text)", border: "2px solid var(--bg)",
+                                }} />
+                              )}
+                            </div>
+                            <div className="spectrum-labels">
+                              <span>{sig.left}</span>
+                              <span>{sig.right}</span>
+                            </div>
+                          </>
+                        )}
+
+                        {sig.type === "multi" && (
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                            {sig.options.map(opt => {
+                              const selected = (notes[session.id]?.signals[sig.id] || []).includes(opt);
+                              return (
+                                <div
+                                  key={opt}
+                                  className={`multi-option ${selected ? "active" : ""}`}
+                                  onClick={() => {
+                                    const current = notes[session.id]?.signals[sig.id] || [];
+                                    const next = selected ? current.filter(o => o !== opt) : [...current, opt];
+                                    setSignal(session.id, sig.id, next);
+                                  }}
+                                >
+                                  {opt}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+
+                        {sig.type === "text" && (
+                          <input
+                            type="text"
+                            value={notes[session.id]?.signals[sig.id] || ""}
+                            onChange={e => setSignal(session.id, sig.id, e.target.value)}
+                            placeholder="Fill in when revealed..."
+                            style={{
+                              width: "100%", padding: "8px 12px", borderRadius: 8,
+                              border: "1.5px solid var(--border)", background: "var(--card)",
+                              color: "var(--text)", fontSize: 13,
+                            }}
+                          />
+                        )}
+                      </div>
+                    ))}
+
+                    <div className="section-label">Listen For</div>
+                    <div style={{ background: "var(--card)", borderRadius: 10, border: "1px solid var(--border)", padding: "4px 14px" }}>
+                      {session.listenFor.map(item => {
+                        const checked = notes[session.id]?.checks[item.id] || false;
+                        return (
+                          <div key={item.id} className="check-item" onClick={() => toggleCheck(session.id, item.id)}>
+                            <div className={`check-box ${checked ? "checked" : ""}`}>
+                              {checked && "✓"}
+                            </div>
+                            <div className={`check-text ${checked ? "checked" : ""}`}>{item.text}</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {session.freeNote && (
+                      <>
+                        <div className="section-label">Live Notes</div>
+                        <textarea
+                          value={notes[session.id]?.freeNotes || ""}
+                          onChange={e => setFreeNote(session.id, e.target.value)}
+                          placeholder="Off-slide comments, verbatim quotes, audience reactions..."
+                          style={{
+                            width: "100%", minHeight: 100, padding: 12, borderRadius: 10,
+                            border: "1.5px solid var(--border)", background: "var(--card)",
+                            color: "var(--text)", fontSize: 13, lineHeight: 1.5, resize: "vertical",
+                          }}
+                        />
+                      </>
+                    )}
+                  </>
+                )}
+              </div>
+
+              <div className="nav-bar">
+                {SESSIONS.map((s, i) => {
+                  const count = completionCount(s.id);
+                  return (
+                    <div
+                      key={s.id}
+                      className={`nav-pill ${!showSynthesis && currentSession === i ? "active" : ""}`}
+                      onClick={() => { setCurrentSession(i); setShowSynthesis(false); }}
+                    >
+                      {s.time.split("-")[0]}
+                      {count > 0 && <span className="badge">{count}</span>}
+                    </div>
+                  );
+                })}
+                <div
+                  className={`nav-pill ${showSynthesis ? "active" : ""}`}
+                  style={{ background: showSynthesis ? "#E6394615" : undefined }}
+                  onClick={() => setShowSynthesis(true)}
+                >
+                  📝 Synthesis
+                </div>
+              </div>
+            </div>
+          );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<ConferenceNotes />);
+    </script>
+</body>
+</html>
